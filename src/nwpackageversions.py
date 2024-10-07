@@ -6,12 +6,12 @@ Alias: nwpv
 
 # GLOBAL MODULES
 import copy
-from functools import lru_cache
 import re
 import requests
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
+from functools import lru_cache
 from requests import Response
 from typing import Any, Callable, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
