@@ -7,13 +7,13 @@ from typing import Optional
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import PyPiRelease
+from nwpackageversions import XMLItem
 
 # SUPPORT METHODS
 # TEST CLASSES
-class PyPiReleaseTestCase(unittest.TestCase):
+class XMLItemTestCase(unittest.TestCase):
 
-    def test_pypirelease_shouldinitializeasexpected_wheninvoked(self) -> None:
+    def test_xmlitem_shouldinitializeasexpected_wheninvoked(self) -> None:
         
         # Arrange
         title : Optional[str] = "2.1.2"
@@ -24,7 +24,7 @@ class PyPiReleaseTestCase(unittest.TestCase):
         pubdate_str : Optional[str] = "Sat, 05 Oct 2024 18:28:18 GMT"
 
         # Act
-        release : PyPiRelease = PyPiRelease(
+        xml_item : XMLItem = XMLItem(
             title = title,
             link = link,
             description = description,
@@ -34,12 +34,12 @@ class PyPiReleaseTestCase(unittest.TestCase):
         )
 
         # Assert
-        self.assertEqual(release.title, title)
-        self.assertEqual(release.link, link)
-        self.assertEqual(release.description, description)
-        self.assertEqual(release.author, author)
-        self.assertEqual(release.pubdate, pubdate)
-        self.assertEqual(release.pubdate_str, pubdate_str)
+        self.assertEqual(xml_item.title, title)
+        self.assertEqual(xml_item.link, link)
+        self.assertEqual(xml_item.description, description)
+        self.assertEqual(xml_item.author, author)
+        self.assertEqual(xml_item.pubdate, pubdate)
+        self.assertEqual(xml_item.pubdate_str, pubdate_str)
 
 # Main
 if __name__ == "__main__":
