@@ -1,0 +1,5 @@
+v1.0.0
+- Library:
+	- Feature: support retrieving package information from PyPi.org.
+- Documentation:
+	- Feature: covers all the features available in v1.0.0.
