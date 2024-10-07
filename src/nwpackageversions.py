@@ -6,6 +6,7 @@ Alias: nwpv
 
 # GLOBAL MODULES
 import copy
+from functools import lru_cache
 import re
 import requests
 import xml.etree.ElementTree as ET
@@ -42,7 +43,6 @@ class XMLItem():
             )
     def __repr__(self):
         return self.__str__()
-
 @dataclass(frozen = True)
 class Release():
 
@@ -278,9 +278,13 @@ class PyPiReleaseManager():
 
         return (most_recent.version, most_recent.date)
 
+    @lru_cache(maxsize = 16)
     def fetch(self, package_name : str, only_final_releases : bool) -> Session:
 
-        '''Retrieves all the releases from PyPi.org.'''
+        '''
+            Retrieves all the releases from PyPi.org. 
+            A "@lru_cache" with "maxsize = 16" is enabled on this method.
+        '''
 
         url : str =  self.__format_url(package_name = package_name)
         response : Response = self.__get_function(url)
@@ -307,6 +311,7 @@ class PyPiReleaseManager():
         )
 
         return session
+    
     def log_list(self, lst : list[Any]) -> None: 
 
         '''Adds a newline between each item of the provide lst before logging them.'''
