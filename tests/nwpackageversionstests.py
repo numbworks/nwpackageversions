@@ -7,7 +7,7 @@ from typing import Optional
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import XMLItem
+from nwpackageversions import XMLItem, Release
 
 # SUPPORT METHODS
 # TEST CLASSES
@@ -89,6 +89,44 @@ class XMLItemTestCase(unittest.TestCase):
         )		
         actual_str : str = str(xml_item)
         actual_repr : str = repr(xml_item)
+        
+        # Assert
+        self.assertEqual(actual_str, expected)
+        self.assertEqual(actual_repr, expected)
+class ReleaseTestCase(unittest.TestCase):
+
+    def setUp(self) -> None:
+	
+        self.package_name : str = "numpy"
+        self.version : str = "2.1.2"
+        self.date : datetime = datetime(2024, 10, 5, 18, 28, 18)
+    def test_release_shouldinitializeasexpected_wheninvoked(self) -> None:
+        
+		# Arrange       
+        # Act
+        release : Release = Release(
+			package_name = self.package_name, 
+			version = self.version, 
+			date = self.date
+		)
+        
+        # Assert
+        self.assertEqual(release.package_name, self.package_name)
+        self.assertEqual(release.version, self.version)
+        self.assertEqual(release.date, self.date)
+    def test_release_shouldreturnexpectedstring_wheninvoked(self) -> None:
+        
+		# Arrange
+        expected : str = "{ 'package_name': 'numpy', 'version': '2.1.2', 'date': '2024-10-05' }"
+        
+        # Act
+        release : Release = Release(
+			package_name = self.package_name, 
+			version = self.version, 
+			date = self.date
+		)		
+        actual_str : str = str(release)
+        actual_repr : str = repr(release)
         
         # Assert
         self.assertEqual(actual_str, expected)
