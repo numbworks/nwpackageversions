@@ -29,6 +29,20 @@ class XMLItem():
     author : Optional[str]
     pubdate : Optional[datetime]
     pubdate_str : Optional[str]
+
+    def __str__(self):
+        return str(
+                "{ "
+                f"'title': '{self.title}', "
+                f"'link': '{self.link}', "
+                f"'description': '{self.description}', "
+                f"'author': '{self.author}', "                                
+                f"'pubdate_str': '{self.pubdate_str}'"
+                " }"                
+            )
+    def __repr__(self):
+        return self.__str__()
+
 @dataclass(frozen = True)
 class Release():
 
@@ -37,6 +51,17 @@ class Release():
     package_name : str
     version : str
     date : datetime
+
+    def __str__(self):
+        return str(
+                "{ "
+                f"'package_name': '{self.package_name}', "
+                f"'version': '{self.version}', "
+                f"'date': '{self.date.strftime("%Y-%m-%d")}'"
+                " }"                
+            )
+    def __repr__(self):
+        return self.__str__()
 @dataclass(frozen = True)
 class Session():
 
@@ -47,6 +72,17 @@ class Session():
     most_recent_date : datetime
     releases : list[Release]
     xml_items : list[XMLItem]
+
+    def __str__(self):
+        return str(
+                "{ "
+                f"'package_name': '{self.package_name}', "
+                f"'most_recent_version': '{self.most_recent_version}', "
+                f"'most_recent_date': '{self.most_recent_date.strftime("%Y-%m-%d")}', "
+                f"'releases': '{len(self.releases)}', "
+                f"'xml_items': '{len(self.xml_items)}'"
+                " }"                
+            )   
 
 # STATIC CLASSES
 # CLASSES
@@ -71,14 +107,7 @@ class PyPiReleaseManager():
 
         url : str =  f"https://pypi.org/rss/project/{package_name}/releases.xml"
 
-        return url
-    def __format_as_date(self, dt : datetime) -> str:
-
-        '''Returns a date string formatted as "2024-10-05".'''
-
-        dt_str : str = dt.strftime("%Y-%m-%d")
-
-        return dt_str      
+        return url  
     def __try_extract_text(self, element : Element, path : str) -> Optional[str]:
 
         '''Extracts the text from the provided element according to path or returns None.'''
@@ -278,45 +307,12 @@ class PyPiReleaseManager():
         )
 
         return session
-    def format_session(self, session : Session) -> str:
+    def log_list(self, lst : list[Any]) -> None: 
 
-        '''
-            Formats the content of the provided session.
+        '''Adds a newline between each item of the provide lst before logging them.'''
 
-            Example: "('numpy', '2.1.2', '2024-10-05')"
-        '''
-
-        most_recent_date_str : str = self.__format_as_date(dt = session.most_recent_date)
-        msg : str = f"('{session.package_name}', '{session.most_recent_version}', '{most_recent_date_str}')"
-
-        return msg       
-    def format_xml_item(self, xml_item : XMLItem) -> str:
-
-        '''
-            Formats the content of the provided release.
-
-            Example: "{ 'title': '2.1.2', 'pubdate': '2024-10-05' }"
-        '''
-
-        return str(
-                "{ "
-                f"'title': '{xml_item.title}', "
-                f"'pubdate': '{self.__format_as_date(dt = xml_item.pubdate)}'"
-                " }"                
-            ) 
-    def log_session(self, session : Session) -> None:
-
-        '''Formats the content of the provided session and logs it.'''
-
-        msg : str = self.format_session(session = session)
-        self.__logging_function(msg)
-    def log_releases(self, xml_releases : list[XMLItem]) -> None: 
-
-        '''Logs releases.'''
-
-        for release in xml_releases:
-            msg : str = self.format_xml_item(xml_item = release)
-            self.__logging_function(msg)
+        for item in lst:
+            self.__logging_function(str(item))
 
 # MAIN
 if __name__ == "__main__":
