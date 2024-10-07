@@ -12,8 +12,9 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
+from re import Match
 from requests import Response
-from typing import Any, Callable, Optional, Tuple, cast
+from typing import Any, Callable, Literal, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
 
 # LOCAL MODULES
@@ -83,6 +84,13 @@ class Session():
                 f"'xml_items': '{len(self.xml_items)}'"
                 " }"                
             )   
+@dataclass(frozen = True)
+class Package():
+
+    '''Represents an installed package.'''
+
+    name : str
+    version : str
 
 # STATIC CLASSES
 # CLASSES
@@ -349,6 +357,54 @@ class PyPiReleaseManager():
 
         return session
     
+    def load_requirements(self, file_path : str) -> Tuple[list[Package], list[str]]:
+
+        '''
+            Expects a file_path to a "requirements.txt" file that looks like the following:
+
+                requests >= 2.26.0
+                asyncio == 3.4.3
+                typed-astunparse >= 2.1.4, == 2.*
+                dataclasses ~= 0.6
+                opencv-python==4.10.0.84
+                black==22.12.0
+                certifi==2022.12.7
+                ...
+
+            Returns (packages, unparsed):
+
+                packages = [
+                    Package(name = "requests", version = "2.26.0"),
+                    Package(name = "asyncio", version = "3.4.3"),
+                    Package(name = "typed-astunparse", version = "2.1.4"),
+                    Package(name = "dataclasses", version = "0.6"),
+                    Package(name = "opencv-python", version = "4.10.0.84"),
+                    Package(name = "black", version = "22.12.0")
+                ]
+
+                unparsed = [ 
+                    "Some unparsable line."
+                ]
+        '''
+
+        content : str = self.__file_reader_function(file_path)
+
+        packages : list[Package] = []
+        unparsed : list[str] = []
+
+        for line in content.strip().splitlines():
+
+            pattern : str = r'^([a-zA-Z0-9\-]+)[\s]*[>=<~]*\s*([\d\.]+)'
+            match : Optional[Match] = re.match(pattern = pattern, string = line)
+
+            if match:
+                name, version = match.groups()
+                package : Package = Package(name=name, version=version)
+                packages.append(package)
+            else:
+                unparsed.append(line)
+
+        return (packages, unparsed)
     def log_list(self, lst : list[Any]) -> None: 
 
         '''Adds a newline between each item of the provide lst before logging them.'''

@@ -1,0 +1,18 @@
+requests >= 2.26.0
+beautifulsoup4 >= 4.10.0
+asyncio == 3.4.3
+lxml >= 4.6.3
+dataclasses ~= 0.6
+graphviz ~= 0.20
+networkx ~= 3.1.0
+typed-astunparse >= 2.1.4, == 2.*
+version-query >= 1.0.5, == 1.*
+tensorflow-hub==0.12.0
+Django==3.1.5
+pytz==2022.1
+line-profiler==1.0b3
+opencv-python==4.10.0.84
+black==22.12.0
+certifi==2022.12.7
+chardet==5.1.0
+charset-normalizer==3.1.0
