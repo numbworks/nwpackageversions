@@ -268,14 +268,15 @@ class PyPiReleaseManager():
 
         url : str =  self.__format_url(package_name = package_name)
         response : Response = self.__get_function(url)
+        xml_items_raw : list[XMLItem] = self.__parse_response(response = response)
 
-        xml_items : list[XMLItem] = self.__parse_response(response = response)
-        xml_items = self.__filter(xml_items = xml_items, function = lambda x : self.__has_title(xml_item = x))
-        xml_items = self.__filter(xml_items = xml_items, function = lambda x : self.__has_pubdate(xml_item = x))
-        xml_items = self.__sort_by_pubdate(xml_items = xml_items)
+        xml_items_clean : list[XMLItem] = copy.deepcopy(xml_items_raw)
+        xml_items_clean = self.__filter(xml_items = xml_items_clean, function = lambda x : self.__has_title(xml_item = x))
+        xml_items_clean = self.__filter(xml_items = xml_items_clean, function = lambda x : self.__has_pubdate(xml_item = x))
+        
+        releases : list[Release] = self.__convert_to_releases(package_name = package_name, xml_items = xml_items_clean)
+        
 
-        if only_final_releases:
-            xml_items = self.__filter(xml_items = xml_items, function = lambda x : self.__is_final_release(xml_item = x))
 
         latest_version, latest_version_date = self.__get_most_recent(xml_items = xml_items)
 
