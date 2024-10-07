@@ -61,10 +61,12 @@ class XMLItemTestCase(unittest.TestCase):
             pubdate = self.pubdate,
             pubdate_str = self.pubdate_str
         )		
-        actual : str = str(xml_item)
+        actual_str : str = str(xml_item)
+        actual_repr : str = repr(xml_item)
         
         # Assert
-        self.assertEqual(actual, expected)
+        self.assertEqual(actual_str, expected)
+        self.assertEqual(actual_repr, expected)
     def test_xmlitem_shouldreturnexpectedstring_whenargumentsarenone(self):
         
 		# Arrange
@@ -85,10 +87,12 @@ class XMLItemTestCase(unittest.TestCase):
             pubdate = None,
             pubdate_str = None
         )		
-        actual : str = str(xml_item)
+        actual_str : str = str(xml_item)
+        actual_repr : str = repr(xml_item)
         
         # Assert
-        self.assertEqual(actual, expected)
+        self.assertEqual(actual_str, expected)
+        self.assertEqual(actual_repr, expected)
 
 # Main
 if __name__ == "__main__":
