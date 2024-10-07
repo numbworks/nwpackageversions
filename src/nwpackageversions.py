@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
 from requests import Response
-from typing import Callable, Optional, Tuple, cast
+from typing import Any, Callable, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
 
 # LOCAL MODULES
@@ -43,8 +43,8 @@ class Session():
     '''Represents a fetching session performed by PyPiReleaseManager.'''
 
     package_name : str
-    latest_version : Optional[str]
-    latest_version_date : Optional[datetime]
+    most_recent_version : str
+    most_recent_date : datetime
     releases : list[Release]
     xml_items : list[XMLItem]
 
@@ -72,22 +72,11 @@ class PyPiReleaseManager():
         url : str =  f"https://pypi.org/rss/project/{package_name}/releases.xml"
 
         return url
-    def __format_optional_string(self, opt : Optional[str]) -> str:
+    def __format_as_date(self, dt : datetime) -> str:
 
-        '''Returns "string" or "None".'''
+        '''Returns a date string formatted as "2024-10-05".'''
 
-        string : str = "None"
-        if opt is not None:
-            string = str(opt)
-
-        return string
-    def __format_optional_datetime(self, dt : Optional[datetime]) -> str:
-
-        '''Returns a date string formatted as "2024-10-05" or "None".'''
-
-        dt_str : str = "None"
-        if dt is not None:
-            dt_str = cast(datetime, dt).strftime('%Y-%m-%d')
+        dt_str : str = dt.strftime("%Y-%m-%d")
 
         return dt_str      
     def __try_extract_text(self, element : Element, path : str) -> Optional[str]:
@@ -201,44 +190,13 @@ class PyPiReleaseManager():
 
         except:
             return False
-    def __is_final_release(self, xml_item : XMLItem) -> bool:
+    def __filter(self, items : list[Any], function : Callable[[Any], bool]) -> list[Any]:
 
-        '''
-            ['2.1.2', '2.1.1', '2.0.2', '2.1.0']    => True
-            ['2.1.0rc1', '7.0.0b1']                 => False
-        '''
+        '''Runs function on items.'''
 
-        pattern : str = r'^\d+\.\d+\.\d+$'
-        status : bool = bool(re.match(pattern, str(xml_item.title)))
-
-        return status
-    def __filter(self, xml_items : list[XMLItem], function : Callable[[XMLItem], bool]) -> list[XMLItem]:
-
-        '''Runs function on releases.'''
-
-        lst : list[XMLItem] = [xml_item for xml_item in xml_items if function(xml_item)]
+        lst : list[Any] = [item for item in items if function(item)]
 
         return lst
-    def __sort_by_pubdate(self, xml_items : list[XMLItem], reverse : bool = True) -> list[XMLItem]:
-
-        '''
-            reverse = True => Descending
-            reverse = False => Ascending
-        '''
-
-        lst : list[XMLItem] = copy.deepcopy(xml_items)
-        lst.sort(key = lambda x : cast(datetime, x.pubdate), reverse = reverse)
-
-        return lst
-    def __get_most_recent(self, xml_items : list[XMLItem]) -> Tuple[Optional[str], Optional[datetime]]:
-        
-        '''Returns (title, pubdate).'''
-        
-        most_recent : XMLItem = xml_items[0]
-        if most_recent is None:
-            return (None, None)
-
-        return (xml_items[0].title, xml_items[0].pubdate)
     def __convert_to_release(self, package_name : str, xml_item : XMLItem) -> Release:
 
         '''Converts the provided xml_item to a Release object.'''
@@ -261,6 +219,35 @@ class PyPiReleaseManager():
             releases.append(release)
 
         return releases
+    def __is_final_release(self, release : Release) -> bool:
+
+        '''
+            ['2.1.2', '2.1.1', '2.0.2', '2.1.0']    => True
+            ['2.1.0rc1', '7.0.0b1']                 => False
+        '''
+
+        pattern : str = r'^\d+\.\d+\.\d+$'
+        status : bool = bool(re.match(pattern, release.version))
+
+        return status    
+    def __sort_by_date(self, releases : list[Release], reverse : bool = True) -> list[Release]:
+
+        '''
+            reverse = True => Descending
+            reverse = False => Ascending
+        '''
+
+        lst : list[Release] = copy.deepcopy(releases)
+        lst.sort(key = lambda release : release.date, reverse = reverse)
+
+        return lst
+    def __get_most_recent(self, releases : list[Release]) -> Tuple[str, datetime]:
+        
+        '''Returns (version, date).'''
+        
+        most_recent : Release = releases[0]
+
+        return (most_recent.version, most_recent.date)
 
     def fetch(self, package_name : str, only_final_releases : bool) -> Session:
 
@@ -271,20 +258,23 @@ class PyPiReleaseManager():
         xml_items_raw : list[XMLItem] = self.__parse_response(response = response)
 
         xml_items_clean : list[XMLItem] = copy.deepcopy(xml_items_raw)
-        xml_items_clean = self.__filter(xml_items = xml_items_clean, function = lambda x : self.__has_title(xml_item = x))
-        xml_items_clean = self.__filter(xml_items = xml_items_clean, function = lambda x : self.__has_pubdate(xml_item = x))
+        xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_title(xml_item = x))
+        xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_pubdate(xml_item = x))
         
         releases : list[Release] = self.__convert_to_releases(package_name = package_name, xml_items = xml_items_clean)
-        
+        releases = self.__sort_by_date(releases = releases)
 
+        if only_final_releases:
+            releases = self.__filter(items = releases, function = lambda x : self.__is_final_release(release = x))        
 
-        latest_version, latest_version_date = self.__get_most_recent(xml_items = xml_items)
+        most_recent_version, most_recent_date = self.__get_most_recent(releases = releases)
 
         session : Session = Session(
             package_name = package_name,
-            xml_items = xml_items,
-            latest_version = latest_version,
-            latest_version_date = latest_version_date
+            most_recent_version = most_recent_version,
+            most_recent_date = most_recent_date,
+            releases = releases,
+            xml_items = xml_items_raw
         )
 
         return session
@@ -293,13 +283,11 @@ class PyPiReleaseManager():
         '''
             Formats the content of the provided session.
 
-            Example: "('numpy', '2.1.2', '2024-10-05')"    
+            Example: "('numpy', '2.1.2', '2024-10-05')"
         '''
 
-        latest_version : str = self.__format_optional_string(opt = session.latest_version)
-        latest_version_date_str : str = self.__format_optional_datetime(dt = session.latest_version_date)
-
-        msg : str = f"('{session.package_name}', '{latest_version}', '{latest_version_date_str}')"
+        most_recent_date_str : str = self.__format_as_date(dt = session.most_recent_date)
+        msg : str = f"('{session.package_name}', '{session.most_recent_version}', '{most_recent_date_str}')"
 
         return msg       
     def format_xml_item(self, xml_item : XMLItem) -> str:
@@ -313,7 +301,7 @@ class PyPiReleaseManager():
         return str(
                 "{ "
                 f"'title': '{xml_item.title}', "
-                f"'pubdate': '{self.__format_optional_datetime(dt = xml_item.pubdate)}'"
+                f"'pubdate': '{self.__format_as_date(dt = xml_item.pubdate)}'"
                 " }"                
             ) 
     def log_session(self, session : Session) -> None:
