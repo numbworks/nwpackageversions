@@ -86,20 +86,57 @@ class Session():
 
 # STATIC CLASSES
 # CLASSES
+class LambdaCollection():
+
+    '''Provides useful lambda functions.'''
+
+    @staticmethod
+    def __load_content(file_path : str) -> str:
+        
+        '''Reads the content of the provided text file and returns it as string.'''
+
+        content : str = ""
+        with open(file_path, 'r', encoding = 'utf-8') as file:
+            content = file.read()
+
+        return content
+
+    @staticmethod
+    def get_function() -> Callable[[str], Response]:
+
+        '''An adapter around requests.get(url).'''
+
+        return lambda url : requests.get(url)
+    @staticmethod
+    def logging_function() -> Callable[[str], None]:
+
+        '''An adapter around print().'''
+
+        return lambda msg : print(msg)
+    @staticmethod
+    def file_reader_function() -> Callable[[str], str]:
+
+        '''An adapter around print().'''
+
+        return lambda file_path : LambdaCollection.__load_content(file_path)    
 class PyPiReleaseManager():
 
     '''This is a client for PyPi release pages.'''
 
     __get_function : Callable[[str], Response]
     __logging_function : Callable[[str], None]
+    __file_reader_function : Callable[[str], str]
 
     def __init__(
             self, 
-            get_function : Callable[[str], Response] = lambda url : requests.get(url),
-            logging_function : Callable[[str], None] = lambda msg : print(msg)) -> None:
+            get_function : Callable[[str], Response] = LambdaCollection.get_function(),
+            logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
+            file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function()
+            ) -> None:
         
         self.__get_function = get_function
         self.__logging_function = logging_function
+        self.__file_reader_function = file_reader_function
 
     def __format_url(self, package_name : str) -> str:
 
