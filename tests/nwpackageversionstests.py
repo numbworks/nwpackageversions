@@ -3,11 +3,13 @@ import os
 import sys
 import unittest
 from datetime import datetime
-from typing import Optional
+from requests import Response
+from typing import Optional, Callable, cast
+from unittest.mock import patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import XMLItem, Release, Session
+from nwpackageversions import LambdaCollection, XMLItem, Release, Session
 
 # SUPPORT METHODS
 # TEST CLASSES
@@ -191,6 +193,55 @@ class SessionTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
+class LambdaCollectionTestCase(unittest.TestCase):
+
+    def test_getfunction_shouldreturnexpectedstatuscodeandtext_wheninvoked(self):
+	
+        # Arrange
+        expected_sc : int = 200
+        expected_text : str = '<rss version="2.0"></rss>'
+        response_mock : Response = MagicMock(spec = Response)
+        response_mock.status_code = expected_sc
+        response_mock.text = expected_text
+        url : str = "https://pypi.org/rss/project/numpy/releases.xml"
+
+		# Act
+        actual : Optional[Response] = None
+        with patch("requests.get", return_value = response_mock):
+            get_function : Callable[[str], Response] = LambdaCollection.get_function()
+            actual = get_function(url)
+
+        # Assert
+        self.assertEqual(cast(Response, actual).status_code, expected_sc)
+        self.assertEqual(cast(Response, actual).text, expected_text)
+    def test_loggingfunction_shouldbecalledwithexpectedmessage_wheninvoked(self):
+        
+        # Arrange
+        msg : str = "Some message"
+
+        # Act
+        with patch("builtins.print") as print_mock:
+            logging_function: Callable[[str], None] = LambdaCollection.logging_function()
+            logging_function(msg)
+
+        # Assert
+        print_mock.assert_called_once_with(msg)
+    def test_filereaderfunction_shouldbecalledwithexpectedargumentsandreturnexpectedcontent_wheninvoked(self):
+        
+        # Arrange
+        expected : str = "requests==2.31.0"
+        open_mock = mock_open(read_data = expected)
+        file_path : str = "C:/requirements.txt"
+
+        # Act
+        actual : Optional[str] = None
+        with patch("builtins.open", open_mock):
+            file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function()
+            actual = file_reader_function(file_path)
+
+        # Assert
+        open_mock.assert_called_once_with(file_path, "r", encoding = "utf-8")
+        self.assertEqual(str(actual), expected)
 
 # Main
 if __name__ == "__main__":
