@@ -99,6 +99,14 @@ class LSession():
     packages : list[Package]
     unparsed_lines : list[str]
 
+    def __str__(self):
+        return str(
+                "{ "
+                f"'packages': '{len(self.packages)}', "
+                f"'unparsed_lines': '{len(self.unparsed_lines)}'"
+                " }"                
+            )  
+
 # STATIC CLASSES
 # CLASSES
 class LambdaCollection():
@@ -154,17 +162,17 @@ class PyPiReleaseManager():
 
     '''This is a client for PyPi release pages.'''
 
-    __get_function : Callable[[str], Response]
     __logging_function : Callable[[str], None]
+    __get_function : Callable[[str], Response]
 
     def __init__(
-            self, 
-            get_function : Callable[[str], Response] = LambdaCollection.get_function(),
-            logging_function : Callable[[str], None] = LambdaCollection.logging_function()
+            self,
+            logging_function : Callable[[str], None],
+            get_function : Callable[[str], Response] = LambdaCollection.get_function()
             ) -> None:
-        
-        self.__get_function = get_function
+
         self.__logging_function = logging_function
+        self.__get_function = get_function
 
     def __format_url(self, package_name : str) -> str:
 
@@ -380,17 +388,17 @@ class LocalPackageManager():
 
     '''This class collects all the logic related to local package management.'''
 
-    __file_reader_function : Callable[[str], str]
     __logging_function : Callable[[str], None]
+    __file_reader_function : Callable[[str], str]
 
     def __init__(
             self, 
-            file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function(),
-            logging_function : Callable[[str], None] = LambdaCollection.logging_function()
+            logging_function : Callable[[str], None],
+            file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function()
             ) -> None:
-        
+
+        self.__logging_function = logging_function        
         self.__file_reader_function = file_reader_function
-        self.__logging_function = logging_function
 
     def load_from_requirements(self, file_path : str) -> LSession:
 
@@ -491,6 +499,48 @@ class LocalPackageManager():
         )
 
         return l_session
+    def load(self, file_path : str) -> LSession:
+
+        '''It supports two files: "requirements.txt" and "Dockerfile"'''
+
+        l_session : Optional[LSession] = None
+
+        if file_path.endswith("requirements.txt"):
+            l_session = self.load_from_requirements(file_path = file_path)
+        elif file_path.endswith("Dockerfile"):
+            l_session = self.load_from_dockerfile(file_path = file_path)
+        else: 
+            no_loading_strategy_found_file_path : Callable[[str], str] = lambda file_path : f"No loading strategy found for the provided file name. ('file_path': '{file_path}', 'supported_file_names' : [ 'requirements.txt', 'Dockerfile' ])"
+            raise Exception(no_loading_strategy_found_file_path(file_path))
+        
+        return cast(LSession, l_session)
+
+class StatusChecker():
+
+    '''This class collects all the logic related to local package management.'''
+
+    __logging_function : Callable[[str], None]
+    __package_manager : LocalPackageManager
+    __release_manager : PyPiReleaseManager
+
+    def __init__(
+            self, 
+            logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
+            package_manager : LocalPackageManager = LocalPackageManager(logging_function = LambdaCollection.logging_function()),
+            release_manager : PyPiReleaseManager = PyPiReleaseManager(logging_function = LambdaCollection.logging_function())
+            ) -> None:
+
+        self.__logging_function = logging_function        
+        self.__package_manager = package_manager
+        self.__release_manager = release_manager
+
+    def check(self, file_path : str, waiting_time : int = 5) -> None:
+
+        # Load all the local packages
+        # Fetch the information for each of them
+        # Compare
+        # Assembe a status
+        # Print and return the status
 
 # MAIN
 if __name__ == "__main__":
