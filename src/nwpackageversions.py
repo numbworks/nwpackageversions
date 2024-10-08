@@ -92,8 +92,7 @@ class FSession():
     '''Represents a fetching session.'''
 
     package_name : str
-    most_recent_version : str
-    most_recent_date : datetime
+    most_recent_release : Release
     releases : list[Release]
     xml_items : list[XMLItem]
 
@@ -101,13 +100,11 @@ class FSession():
         return str(
                 "{ "
                 f"'package_name': '{self.package_name}', "
-                f"'most_recent_version': '{self.most_recent_version}', "
-                f"'most_recent_date': '{self.most_recent_date.strftime("%Y-%m-%d")}', "
+                f"'most_recent_release': '('{self.most_recent_release.version}', '{self.most_recent_release.date.strftime("%Y-%m-%d")}')', "
                 f"'releases': '{len(self.releases)}', "
                 f"'xml_items': '{len(self.xml_items)}'"
                 " }"                
             )   
-
 @dataclass(frozen = True)
 class StatusDetail():
 
@@ -507,13 +504,13 @@ class PyPiReleaseManager():
         lst.sort(key = lambda release : release.date, reverse = reverse)
 
         return lst
-    def __get_most_recent(self, releases : list[Release]) -> Tuple[str, datetime]:
+    def __get_most_recent(self, releases : list[Release]) -> Release:
         
-        '''Returns (version, date).'''
+        '''Returns most_recent_release by assuming releases are sorted in descending order.'''
         
-        most_recent : Release = releases[0]
+        most_recent_release : Release = releases[0]
 
-        return (most_recent.version, most_recent.date)
+        return most_recent_release
 
     @lru_cache(maxsize = 16)
     def fetch(self, package_name : str) -> FSession:
@@ -534,12 +531,9 @@ class PyPiReleaseManager():
         releases : list[Release] = self.__convert_to_releases(package_name = package_name, xml_items = xml_items_clean)
         releases = self.__sort_by_date(releases = releases)
 
-        most_recent_version, most_recent_date = self.__get_most_recent(releases = releases)
-
         f_session : FSession = FSession(
             package_name = package_name,
-            most_recent_version = most_recent_version,
-            most_recent_date = most_recent_date,
+            most_recent_release = self.__get_most_recent(releases = releases),
             releases = releases,
             xml_items = xml_items_raw
         )
@@ -607,11 +601,10 @@ class StatusChecker():
         for current_package in l_session.packages:
 
             f_session : FSession = self.__release_manager.fetch(package_name = current_package.name)
-            most_recent_release : Release = f_session.releases[0]
             
             status_detail : StatusDetail = self.__create_status_detail(
                 current_package = current_package, 
-                most_recent_release = most_recent_release
+                most_recent_release = f_session.most_recent_release
             )
             status_details.append(status_detail)
 
