@@ -164,7 +164,10 @@ class _MessageCollection():
     @staticmethod
     def no_loading_strategy_found(file_path : str) -> str:
         return f"No loading strategy found for the provided file name. ('file_path': '{file_path}', 'supported_file_names' : [ 'requirements.txt', 'Dockerfile' ])"
-
+    @staticmethod
+    def zero_packages_found(file_path : str) -> str:
+        return f"Zero packages found in '{file_path}'. Please open the documentation to check the expected layout of the supported files."
+    
 # CLASSES
 class LocalPackageManager():
 
@@ -291,6 +294,9 @@ class LocalPackageManager():
         else:
             raise Exception(_MessageCollection.no_loading_strategy_found(file_path))
         
+        if l_session.packages == 0:
+            raise Exception(_MessageCollection.zero_packages_found(file_path))
+
         return cast(LSession, l_session)
 class PyPiReleaseManager():
 
