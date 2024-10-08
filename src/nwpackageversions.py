@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
 from functools import lru_cache
-from re import Match
+from re import Match, Pattern
 from requests import Response
 from typing import Any, Callable, Literal, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
@@ -395,8 +395,8 @@ class PyPiReleaseManager():
         '''
 
         content : str = self.__file_reader_function(file_path)
-
         pattern : str = r'^([a-zA-Z0-9\-]+)[\s]*[>=<~]*\s*([\d\.]+)'
+
         packages : list[Package] = []
         unparsed_lines : list[str] = []
 
@@ -442,14 +442,14 @@ class PyPiReleaseManager():
         '''
 
         content : str = self.__file_reader_function(file_path)
+        pattern : Pattern = re.compile(r"pip install ([\w\-\_]+)(==)([\d\.]+)")
 
-        pattern : str = r"pip install ([\w\-\_]+)(==)([\d\.]+)"
         packages : list[Package] = []
         unparsed_lines : list[str] = []
 
         for line in content.strip().splitlines():
 
-            match : Optional[Match] = re.match(pattern = pattern, string = line)
+            match : Optional[Match] = pattern.search(string = line)
 
             if match:
                 package : Package = Package(name = match.group(1), version = match.group(3))
