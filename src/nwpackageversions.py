@@ -231,6 +231,17 @@ class _MessageCollection():
     def x_local_packages_found_successfully_loaded(packages : list[Package]) -> str:
         return f"'{str(len(packages))}' local packages has been found and successfully loaded."        
     @staticmethod
+    def x_unparsed_lines(unparsed_lines : list[str]) -> str:
+        
+        msg : str = f"'{str(len(unparsed_lines))}' unparsed lines."
+
+        if len(unparsed_lines) > 0:
+            msg += "\n"
+            msg += "These are: "
+            msg += str(unparsed_lines)
+        
+        return msg
+    @staticmethod
     def starting_to_evaluate_status_local_package() -> str:
         return "Now starting to evaluate the status of each local package..."
     @staticmethod
@@ -259,6 +270,14 @@ class LocalPackageManager():
             ) -> None:
 
         self.__file_reader_function = file_reader_function
+
+    def __clean_unparsed_lines(self, unparsed_lines : list[str]) -> list[str] :
+
+        '''Removes empty strings from unparsed_lines.'''
+
+        unparsed_lines = [line for line in unparsed_lines if line]
+
+        return unparsed_lines
 
     def load_from_requirements(self, file_path : str) -> LSession:
 
@@ -307,6 +326,8 @@ class LocalPackageManager():
             else:
                 unparsed_lines.append(line)
 
+        unparsed_lines = self.__clean_unparsed_lines(unparsed_lines = unparsed_lines)
+
         l_session : LSession = LSession(
             packages = packages,
             unparsed_lines = unparsed_lines
@@ -352,6 +373,8 @@ class LocalPackageManager():
                 packages.append(package)
             else:
                 unparsed_lines.append(line)
+
+        unparsed_lines = self.__clean_unparsed_lines(unparsed_lines = unparsed_lines)
 
         l_session : LSession = LSession(
             packages = packages,
@@ -714,6 +737,7 @@ class StatusChecker():
         l_session : LSession = self.__package_manager.load(file_path = file_path)
 
         self.__logging_function(_MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages))
+        self.__logging_function(_MessageCollection.x_unparsed_lines(l_session.unparsed_lines))
         self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
 
         status_details : list[StatusDetail] = self.__create_status_details(l_session = l_session, waiting_time = waiting_time)
