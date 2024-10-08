@@ -122,8 +122,11 @@ class StatusSummary():
 
     '''Represents a summarized status.'''
 
+    total_packages : int
     matching : int
+    matching_prc : str
     mismatching : int
+    mismatching_prc : str
     details : list[StatusDetail]
 
 # STATIC CLASSES
@@ -544,7 +547,7 @@ class PyPiReleaseManager():
         return f_session
 class StatusChecker():
 
-    '''This class collects all the logic related to local package management.'''
+    '''This class collects all the logic related to package status checking.'''
 
     __package_manager : LocalPackageManager
     __release_manager : PyPiReleaseManager
@@ -596,15 +599,11 @@ class StatusChecker():
         )
 
         return status_detail
+    def __create_status_details(self, l_session : LSession, waiting_time : int) -> list[StatusDetail]:
 
-    def check(self, file_path : str, waiting_time : int = 5) -> None:
+        '''Creates a list of StatusDetail objects out of the provided l_session.'''
 
-        if waiting_time < 5:
-            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, 5))
-
-        l_session : LSession = self.__package_manager.load(file_path = file_path)
-
-        statuses : list[StatusDetail] = []
+        status_details : list[StatusDetail] = []
         for current_package in l_session.packages:
 
             f_session : FSession = self.__release_manager.fetch(package_name = current_package.name)
@@ -614,18 +613,54 @@ class StatusChecker():
                 current_package = current_package, 
                 most_recent_release = most_recent_release
             )
-            statuses.append(status_detail)
+            status_details.append(status_detail)
 
             self.__sleeping_function(waiting_time)
+        
+        return status_details
+    def __calculate_prc(self, value: int, total : int) -> str:
 
+        '''Calculates % out of provided value and total.'''
 
+        prc : str = f"{(value / total) * 100:.2f}%"
 
-        # Load all the local packages
-        # Fetch the information for each of them
-        # Compare
-        # Assembe a status
-        # Print and return the status
-        pass
+        return prc
+    def __create_status_summary(self, status_details : list[StatusDetail]) -> StatusSummary:
+
+        '''Creates a StatusSummary object out of the provided status_details.'''
+
+        total_packages : int = len(status_details)
+        matching : int = 0
+        mismatching : int = 0
+
+        for status_detail in status_details:
+            
+            if status_detail.is_version_matching == True:
+                matching += 1
+            else:
+                mismatching += 1
+
+        status_summary : StatusSummary = StatusSummary(
+            total_packages = total_packages,
+            matching = matching,
+            matching_prc = self.__calculate_prc(value = matching, total = total_packages),
+            mismatching = mismatching,
+            mismatching_prc = self.__calculate_prc(value = mismatching, total = total_packages),
+            details = status_details
+        )
+
+        return status_summary
+
+    def check(self, file_path : str, waiting_time : int = 5) -> StatusSummary:
+
+        if waiting_time < 5:
+            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, 5))
+
+        l_session : LSession = self.__package_manager.load(file_path = file_path)
+        status_details : list[StatusDetail] = self.__create_status_details(l_session = l_session, waiting_time = waiting_time)
+        status_summary : StatusSummary = self.__create_status_summary(status_details = status_details)
+
+        return status_summary
 
 # MAIN
 if __name__ == "__main__":
