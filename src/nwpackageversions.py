@@ -14,7 +14,7 @@ from datetime import datetime
 from functools import lru_cache
 from re import Match, Pattern
 from requests import Response
-from typing import Any, Callable, Literal, Optional, Tuple, cast
+from typing import Any, Callable, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
 
 # LOCAL MODULES
@@ -115,6 +115,15 @@ class LambdaCollection():
             content = file.read()
 
         return content
+    @staticmethod
+    def __log_list(lst : list[Any]) -> None: 
+
+        '''Adds a newline between each item of the provided lst before logging them.'''
+
+        logging_function : Callable[[str], None] = LambdaCollection.logging_function()
+
+        for item in lst:
+            logging_function(str(item))
 
     @staticmethod
     def get_function() -> Callable[[str], Response]:
@@ -129,6 +138,13 @@ class LambdaCollection():
 
         return lambda msg : print(msg)
     @staticmethod
+    def list_logging_function() -> Callable[[list[Any]], None]:
+
+        '''
+            An adapter around print() that adds a newline between each item of the provided lst before priting them.'''
+
+        return lambda lst : LambdaCollection.__log_list(lst)   
+    @staticmethod
     def file_reader_function() -> Callable[[str], str]:
 
         '''An adapter around print().'''
@@ -140,18 +156,15 @@ class PyPiReleaseManager():
 
     __get_function : Callable[[str], Response]
     __logging_function : Callable[[str], None]
-    __file_reader_function : Callable[[str], str]
 
     def __init__(
             self, 
             get_function : Callable[[str], Response] = LambdaCollection.get_function(),
-            logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
-            file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function()
+            logging_function : Callable[[str], None] = LambdaCollection.logging_function()
             ) -> None:
         
         self.__get_function = get_function
         self.__logging_function = logging_function
-        self.__file_reader_function = file_reader_function
 
     def __format_url(self, package_name : str) -> str:
 
@@ -363,7 +376,22 @@ class PyPiReleaseManager():
         )
 
         return f_session
-    
+class LocalPackageManager():
+
+    '''This class collects all the logic related to local package management.'''
+
+    __file_reader_function : Callable[[str], str]
+    __logging_function : Callable[[str], None]
+
+    def __init__(
+            self, 
+            file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function(),
+            logging_function : Callable[[str], None] = LambdaCollection.logging_function()
+            ) -> None:
+        
+        self.__file_reader_function = file_reader_function
+        self.__logging_function = logging_function
+
     def load_from_requirements(self, file_path : str) -> LSession:
 
         '''
@@ -463,13 +491,6 @@ class PyPiReleaseManager():
         )
 
         return l_session
-        
-    def log_list(self, lst : list[Any]) -> None: 
-
-        '''Adds a newline between each item of the provide lst before logging them.'''
-
-        for item in lst:
-            self.__logging_function(str(item))
 
 # MAIN
 if __name__ == "__main__":
