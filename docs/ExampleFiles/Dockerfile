@@ -1,10 +1,10 @@
 FROM python:3.12.5-bookworm
 
-RUN pip install requests>= 2.26.0
-RUN pip install beautifulsoup4>=4.10.0
+RUN pip install requests==2.26.0
+RUN pip install beautifulsoup4==4.10.0
 RUN pip install asyncio==3.4.3
-RUN pip install lxml>=4.6.3
-RUN pip install typed-astunparse>=2.1.4
+RUN pip install lxml==4.6.3
+RUN pip install typed-astunparse==2.1.4
 RUN pip install tensorflow-hub==0.12.0
 RUN pip install Django==3.1.5
 RUN pip install pytz==2022.1

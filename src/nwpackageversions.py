@@ -364,7 +364,7 @@ class PyPiReleaseManager():
 
         return f_session
     
-    def load_requirements(self, file_path : str) -> LSession:
+    def load_from_requirements(self, file_path : str) -> LSession:
 
         '''
             Expects a file_path to a "requirements.txt" file that looks like the following:
@@ -396,12 +396,12 @@ class PyPiReleaseManager():
 
         content : str = self.__file_reader_function(file_path)
 
+        pattern : str = r'^([a-zA-Z0-9\-]+)[\s]*[>=<~]*\s*([\d\.]+)'
         packages : list[Package] = []
         unparsed_lines : list[str] = []
 
         for line in content.strip().splitlines():
 
-            pattern : str = r'^([a-zA-Z0-9\-]+)[\s]*[>=<~]*\s*([\d\.]+)'
             match : Optional[Match] = re.match(pattern = pattern, string = line)
 
             if match:
@@ -417,7 +417,53 @@ class PyPiReleaseManager():
         )
 
         return l_session
-    
+    def load_from_dockerfile(self, file_path : str) -> LSession:
+
+        '''
+            Expects a file_path to a "Dockerfile" file that looks like the following:
+
+                FROM python:3.12.5-bookworm
+
+                RUN pip install requests==2.26.0
+                RUN pip install beautifulsoup4==4.10.0
+                ...
+
+            Returns a LSession:
+
+                packages = [
+                    Package(name = "requests", version = "2.26.0"),
+                    Package(name = "beautifulsoup4", version = "4.10.0"),
+                    ...
+                ]
+
+                unparsed = [ 
+                    "Some unparsable line."
+                ]
+        '''
+
+        content : str = self.__file_reader_function(file_path)
+
+        pattern : str = r"pip install ([\w\-\_]+)(==)([\d\.]+)"
+        packages : list[Package] = []
+        unparsed_lines : list[str] = []
+
+        for line in content.strip().splitlines():
+
+            match : Optional[Match] = re.match(pattern = pattern, string = line)
+
+            if match:
+                package : Package = Package(name = match.group(1), version = match.group(3))
+                packages.append(package)
+            else:
+                unparsed_lines.append(line)
+
+        l_session : LSession = LSession(
+            packages = packages,
+            unparsed_lines = unparsed_lines
+        )
+
+        return l_session
+        
     def log_list(self, lst : list[Any]) -> None: 
 
         '''Adds a newline between each item of the provide lst before logging them.'''
