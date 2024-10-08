@@ -9,7 +9,7 @@ from unittest.mock import patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import LambdaCollection, XMLItem, Release, Session
+from nwpackageversions import LambdaCollection, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 # TEST CLASSES
@@ -133,7 +133,7 @@ class ReleaseTestCase(unittest.TestCase):
         # Assert
         self.assertEqual(actual_str, expected)
         self.assertEqual(actual_repr, expected)
-class SessionTestCase(unittest.TestCase):
+class FSessionTestCase(unittest.TestCase):
 
     def setUp(self):
 
@@ -152,11 +152,11 @@ class SessionTestCase(unittest.TestCase):
             XMLItem(title="2.0.2", link="https://pypi.org/project/numpy/2.0.2/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Mon, 26 Aug 2024 20:04:14 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Mon, 26 Aug 2024 20:04:14 GMT"),
             XMLItem(title="2.1.0", link="https://pypi.org/project/numpy/2.1.0/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Sun, 18 Aug 2024 21:39:07 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sun, 18 Aug 2024 21:39:07 GMT")
         ]
-    def test_session_shouldinitializeasexpected_wheninvoked(self):
+    def test_fsession_shouldinitializeasexpected_wheninvoked(self):
 	
 		# Arrange
         # Act
-        session : Session = Session(
+        f_session : FSession = FSession(
             package_name = self.package_name,
             most_recent_version = self.most_recent_version,
             most_recent_date = self.most_recent_date,
@@ -165,12 +165,12 @@ class SessionTestCase(unittest.TestCase):
         )
 		
 		# Assert
-        self.assertEqual(session.package_name, self.package_name)
-        self.assertEqual(session.most_recent_version, self.most_recent_version)
-        self.assertEqual(session.most_recent_date, self.most_recent_date)
-        self.assertEqual(session.releases, self.releases)
-        self.assertEqual(session.xml_items, self.xml_items)
-    def test_session_shouldreturnexpectedstring_whenargumentsarenotnone(self):
+        self.assertEqual(f_session.package_name, self.package_name)
+        self.assertEqual(f_session.most_recent_version, self.most_recent_version)
+        self.assertEqual(f_session.most_recent_date, self.most_recent_date)
+        self.assertEqual(f_session.releases, self.releases)
+        self.assertEqual(f_session.xml_items, self.xml_items)
+    def test_fsession_shouldreturnexpectedstring_whenargumentsarenotnone(self):
         
 		# Arrange
         expected: str = (
@@ -182,14 +182,14 @@ class SessionTestCase(unittest.TestCase):
         )		
 		
         # Act
-        session : Session = Session(
+        f_session : FSession = FSession(
             package_name = self.package_name,
             most_recent_version = self.most_recent_version,
             most_recent_date = self.most_recent_date,
             releases = self.releases,
             xml_items = self.xml_items
         )
-        actual : str = str(session)
+        actual : str = str(f_session)
 
         # Assert
         self.assertEqual(actual, expected)

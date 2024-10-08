@@ -64,9 +64,9 @@ class Release():
     def __repr__(self):
         return self.__str__()
 @dataclass(frozen = True)
-class Session():
+class FSession():
 
-    '''Represents a fetching session performed by PyPiReleaseManager.'''
+    '''Represents a fetching session.'''
 
     package_name : str
     most_recent_version : str
@@ -91,6 +91,13 @@ class Package():
 
     name : str
     version : str
+@dataclass(frozen = True)
+class LSession():
+
+    '''Represents a loading session.'''
+
+    packages : list[Package]
+    unparsed_lines : list[str]
 
 # STATIC CLASSES
 # CLASSES
@@ -324,7 +331,7 @@ class PyPiReleaseManager():
         return (most_recent.version, most_recent.date)
 
     @lru_cache(maxsize = 16)
-    def fetch(self, package_name : str, only_final_releases : bool) -> Session:
+    def fetch(self, package_name : str, only_final_releases : bool) -> FSession:
 
         '''
             Retrieves all the releases from PyPi.org. 
@@ -347,7 +354,7 @@ class PyPiReleaseManager():
 
         most_recent_version, most_recent_date = self.__get_most_recent(releases = releases)
 
-        session : Session = Session(
+        f_session : FSession = FSession(
             package_name = package_name,
             most_recent_version = most_recent_version,
             most_recent_date = most_recent_date,
@@ -355,9 +362,9 @@ class PyPiReleaseManager():
             xml_items = xml_items_raw
         )
 
-        return session
+        return f_session
     
-    def load_requirements(self, file_path : str) -> Tuple[list[Package], list[str]]:
+    def load_requirements(self, file_path : str) -> LSession:
 
         '''
             Expects a file_path to a "requirements.txt" file that looks like the following:
@@ -371,7 +378,7 @@ class PyPiReleaseManager():
                 certifi==2022.12.7
                 ...
 
-            Returns (packages, unparsed):
+            Returns a LSession:
 
                 packages = [
                     Package(name = "requests", version = "2.26.0"),
@@ -390,7 +397,7 @@ class PyPiReleaseManager():
         content : str = self.__file_reader_function(file_path)
 
         packages : list[Package] = []
-        unparsed : list[str] = []
+        unparsed_lines : list[str] = []
 
         for line in content.strip().splitlines():
 
@@ -402,9 +409,15 @@ class PyPiReleaseManager():
                 package : Package = Package(name=name, version=version)
                 packages.append(package)
             else:
-                unparsed.append(line)
+                unparsed_lines.append(line)
 
-        return (packages, unparsed)
+        l_session : LSession = LSession(
+            packages = packages,
+            unparsed_lines = unparsed_lines
+        )
+
+        return l_session
+    
     def log_list(self, lst : list[Any]) -> None: 
 
         '''Adds a newline between each item of the provide lst before logging them.'''
