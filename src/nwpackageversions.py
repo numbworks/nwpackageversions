@@ -226,6 +226,33 @@ class _MessageCollection():
     @staticmethod
     def current_version_doesnt_match(current_package : Package, most_recent_release : Release) -> str:
         return f"Package: '{current_package.name}'. The current version ('{current_package.version}' doesn't match with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}'))."
+    @staticmethod
+    def status_checking_operation_started() -> str:
+        return "The status checking operation has started!"
+    @staticmethod
+    def list_local_packages_will_be_loaded(file_path : str) -> str:
+        return f"The list of local packages will be loaded from the following 'file_path': '{file_path}'."
+    @staticmethod
+    def waiting_time_will_be(waiting_time : int) -> str:
+        return f"The 'waiting_time' between each fetching request will be: '{str(waiting_time)}' seconds."
+    @staticmethod
+    def x_local_packages_found_successfully_loaded(packages : list[Package]) -> str:
+        return f"'{str(len(packages))}' local packages has been found and successfully loaded."        
+    @staticmethod
+    def starting_to_evaluate_status_local_package() -> str:
+        return "Now starting to evaluate the status of each local package..."
+    @staticmethod
+    def status_evaluation_operation_successfully_loaded() -> str:
+        return "The status evaluation operation has been successfully completed."
+    @staticmethod
+    def starting_creation_status_summary() -> str:
+        return "Now starting the creation of a status summary..."
+    @staticmethod
+    def status_summary_successfully_created() -> str:
+        return "The status summary has been successfully created."
+    @staticmethod
+    def status_checking_operation_completed() -> str:
+        return "The status checking operation has been completed."       
 
 # CLASSES
 class LocalPackageManager():
@@ -681,32 +708,33 @@ class StatusChecker():
                 3. returns a StatusSummary object
             
             All the steps are logged.
-
             It raises an Exception if an issue arises.
         '''
 
-        if waiting_time < 5:
-            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, 5))
+        minimum_wt : int = 5
+        if waiting_time < minimum_wt:
+            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt))
 
-        self.__logging_function("The status checking operation has started!")
-        self.__logging_function(f"The list of local packages will be loaded from the following 'file_path': '{file_path}'.")
-        self.__logging_function(f"The 'waiting_time' between each fetching request will be: '{str(waiting_time)}' seconds.")
+        self.__logging_function(_MessageCollection.status_checking_operation_started())
+        self.__logging_function(_MessageCollection.list_local_packages_will_be_loaded(file_path))
+        self.__logging_function(_MessageCollection.waiting_time_will_be(waiting_time))
 
         l_session : LSession = self.__package_manager.load(file_path = file_path)
 
-        self.__logging_function(f"'{str(len(l_session.packages))}' local packages has been found and successfully loaded.")
-        self.__logging_function("Now starting to evaluate the status of each local package...")
+        self.__logging_function(_MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages))
+        self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
 
         status_details : list[StatusDetail] = self.__create_status_details(l_session = l_session, waiting_time = waiting_time)
 
-        self.__logging_function("The status evaluation operation has been successfully completed.")
+        self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
         self.__list_logging_function(status_details)
-        self.__logging_function("Now starting the creation of a status summary...")
+        self.__logging_function(_MessageCollection.starting_creation_status_summary())
 
         status_summary : StatusSummary = self.__create_status_summary(status_details = status_details)
 
-        self.__logging_function("The status summary has been successfully created.")
+        self.__logging_function(_MessageCollection.status_summary_successfully_created())
         self.__logging_function(str(status_summary))
+        self.__logging_function(_MessageCollection.status_checking_operation_completed())
 
         return status_summary
     def try_check(self, file_path : str, waiting_time : int = 5) -> Optional[StatusSummary]:
