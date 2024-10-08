@@ -176,6 +176,12 @@ class LambdaCollection():
         '''An adapter around print().'''
 
         return lambda file_path : LambdaCollection.__load_content(file_path)    
+    @staticmethod
+    def sleeping_function() -> Callable[[int], None]:
+
+        '''An adapter around time.sleep().'''
+
+        return lambda waiting_time : sleep(cast(float, waiting_time))      
 class _MessageCollection():
 
     '''Collects all the messages used for logging and for the exceptions.'''
@@ -543,17 +549,20 @@ class StatusChecker():
     __package_manager : LocalPackageManager
     __release_manager : PyPiReleaseManager
     __logging_function : Callable[[str], None]
+    __sleeping_function : Callable[[int], None]
 
     def __init__(
             self, 
             package_manager : LocalPackageManager = LocalPackageManager(),
             release_manager : PyPiReleaseManager = PyPiReleaseManager(),
-            logging_function : Callable[[str], None] = LambdaCollection.logging_function()
+            logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
+            sleeping_function : Callable[[int], None] = LambdaCollection.sleeping_function()
             ) -> None:
       
         self.__package_manager = package_manager
         self.__release_manager = release_manager
-        self.__logging_function = logging_function 
+        self.__logging_function = logging_function
+        self.__sleeping_function = sleeping_function
 
     def __compare(self, current_package : Package, most_recent_release : Release) -> Tuple[bool, str]:
 
@@ -607,9 +616,9 @@ class StatusChecker():
             )
             statuses.append(status_detail)
 
-            sleep(cast(float, waiting_time))
+            self.__sleeping_function(waiting_time)
 
-        
+
 
         # Load all the local packages
         # Fetch the information for each of them
