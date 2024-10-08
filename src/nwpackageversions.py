@@ -108,7 +108,6 @@ class LSession():
             )  
 
 # STATIC CLASSES
-# CLASSES
 class LambdaCollection():
 
     '''Provides useful lambda functions.'''
@@ -158,6 +157,15 @@ class LambdaCollection():
         '''An adapter around print().'''
 
         return lambda file_path : LambdaCollection.__load_content(file_path)    
+class _MessageCollection():
+
+    '''Collects all the messages used for logging and for the exceptions.'''
+
+    @staticmethod
+    def no_loading_strategy_found(file_path : str) -> str:
+        return f"No loading strategy found for the provided file name. ('file_path': '{file_path}', 'supported_file_names' : [ 'requirements.txt', 'Dockerfile' ])"
+
+# CLASSES
 class PyPiReleaseManager():
 
     '''This is a client for PyPi release pages.'''
@@ -509,9 +517,8 @@ class LocalPackageManager():
             l_session = self.load_from_requirements(file_path = file_path)
         elif file_path.endswith("Dockerfile"):
             l_session = self.load_from_dockerfile(file_path = file_path)
-        else: 
-            no_loading_strategy_found_file_path : Callable[[str], str] = lambda file_path : f"No loading strategy found for the provided file name. ('file_path': '{file_path}', 'supported_file_names' : [ 'requirements.txt', 'Dockerfile' ])"
-            raise Exception(no_loading_strategy_found_file_path(file_path))
+        else:
+            raise Exception(_MessageCollection.no_loading_strategy_found(file_path))
         
         return cast(LSession, l_session)
 
