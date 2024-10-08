@@ -570,6 +570,7 @@ class StatusChecker():
     __package_manager : LocalPackageManager
     __release_manager : PyPiReleaseManager
     __logging_function : Callable[[str], None]
+    __list_logging_function : Callable[[list[Any]], None]
     __sleeping_function : Callable[[int], None]
 
     def __init__(
@@ -577,12 +578,14 @@ class StatusChecker():
             package_manager : LocalPackageManager = LocalPackageManager(),
             release_manager : PyPiReleaseManager = PyPiReleaseManager(),
             logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
+            list_logging_function : Callable[[list[Any]], None] = LambdaCollection.list_logging_function(),
             sleeping_function : Callable[[int], None] = LambdaCollection.sleeping_function()
             ) -> None:
       
         self.__package_manager = package_manager
         self.__release_manager = release_manager
         self.__logging_function = logging_function
+        self.__list_logging_function = list_logging_function
         self.__sleeping_function = sleeping_function
 
     def __compare(self, current_package : Package, most_recent_release : Release) -> Tuple[bool, str]:
@@ -670,7 +673,17 @@ class StatusChecker():
 
     def check(self, file_path : str, waiting_time : int = 5) -> StatusSummary:
 
-        ''''''
+        '''
+            This method:
+            
+                1. loads a list of locally-installed Python packages from file_path
+                2. fetches the latest information about each of them on PyPi.org
+                3. returns a StatusSummary object
+            
+            All the steps are logged.
+
+            It raises an Exception if an issue arises.
+        '''
 
         if waiting_time < 5:
             raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, 5))
@@ -687,16 +700,32 @@ class StatusChecker():
         status_details : list[StatusDetail] = self.__create_status_details(l_session = l_session, waiting_time = waiting_time)
 
         self.__logging_function("The status evaluation operation has been successfully completed.")
-
-
+        self.__list_logging_function(status_details)
         self.__logging_function("Now starting the creation of a status summary...")
 
         status_summary : StatusSummary = self.__create_status_summary(status_details = status_details)
 
         self.__logging_function("The status summary has been successfully created.")
+        self.__logging_function(str(status_summary))
 
         return status_summary
+    def try_check(self, file_path : str, waiting_time : int = 5) -> Optional[StatusSummary]:
 
+        '''
+            It performs the same operations as check().
+            It doesn't raise an Exception if an issue arises, but it logs it and returns None.
+        '''
+
+        try:
+            
+            return self.check(file_path = file_path, waiting_time = waiting_time)
+
+        except Exception as e:
+
+            self.__logging_function(str(e))
+            
+            return None
+            
 # MAIN
 if __name__ == "__main__":
     pass
