@@ -153,7 +153,9 @@ C:\Users\Rubèn\src\nwpackageversions\src\
 
 ## Appendix - Example files
 
-1. [releases.xml](ExampleFiles/releases.xml)
+1. [Dockerfile](ExampleFiles/Dockerfile)
+2. [releases.xml](ExampleFiles/releases.xml)
+3. [requirements.txt](ExampleFiles/requirements.txt)
 
 ## Markdown Toolset
 
