@@ -7,6 +7,7 @@ Alias: nwpv
 # GLOBAL MODULES
 import copy
 import re
+from time import sleep
 import requests
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
@@ -107,6 +108,24 @@ class FSession():
                 " }"                
             )   
 
+@dataclass(frozen = True)
+class StatusDetail():
+
+    '''Represents a detailed status.'''
+
+    current_package : Package
+    most_recent_release : Release
+    is_version_matching : bool
+    description : str
+@dataclass(frozen = True)
+class StatusSummary():
+
+    '''Represents a summarized status.'''
+
+    matching : int
+    mismatching : int
+    details : list[StatusDetail]
+
 # STATIC CLASSES
 class LambdaCollection():
 
@@ -171,6 +190,12 @@ class _MessageCollection():
     @staticmethod
     def waiting_time_cant_be_less_than(waiting_time : int, expected : int) -> str:
         return f"Waiting time ('{str(waiting_time)}') can't be less than {expected} seconds."
+    @staticmethod
+    def current_version_matches(current_package : Package, most_recent_release : Release) -> str:
+        return f"Package: '{current_package.name}'. The current version ('{current_package.version}' matches with the most recent release ('{most_recent_release.version}'))."
+    @staticmethod
+    def current_version_doesnt_match(current_package : Package, most_recent_release : Release) -> str:
+        return f"Package: '{current_package.name}'. The current version ('{current_package.version}' doesn't match with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}'))."
 
 # CLASSES
 class LocalPackageManager():
@@ -462,17 +487,6 @@ class PyPiReleaseManager():
             releases.append(release)
 
         return releases
-    def __is_final_release(self, release : Release) -> bool:
-
-        '''
-            ['2.1.2', '2.1.1', '2.0.2', '2.1.0']    => True
-            ['2.1.0rc1', '7.0.0b1']                 => False
-        '''
-
-        pattern : str = r'^\d+\.\d+\.\d+$'
-        status : bool = bool(re.match(pattern, release.version))
-
-        return status    
     def __sort_by_date(self, releases : list[Release], reverse : bool = True) -> list[Release]:
 
         '''
@@ -493,7 +507,7 @@ class PyPiReleaseManager():
         return (most_recent.version, most_recent.date)
 
     @lru_cache(maxsize = 16)
-    def fetch(self, package_name : str, only_final_releases : bool) -> FSession:
+    def fetch(self, package_name : str) -> FSession:
 
         '''
             Retrieves all the releases from PyPi.org. 
@@ -510,9 +524,6 @@ class PyPiReleaseManager():
         
         releases : list[Release] = self.__convert_to_releases(package_name = package_name, xml_items = xml_items_clean)
         releases = self.__sort_by_date(releases = releases)
-
-        if only_final_releases:
-            releases = self.__filter(items = releases, function = lambda x : self.__is_final_release(release = x))        
 
         most_recent_version, most_recent_date = self.__get_most_recent(releases = releases)
 
@@ -544,12 +555,60 @@ class StatusChecker():
         self.__release_manager = release_manager
         self.__logging_function = logging_function 
 
+    def __compare(self, current_package : Package, most_recent_release : Release) -> Tuple[bool, str]:
+
+        '''Returns (is_version_matching, description).'''
+
+        is_version_matching : Optional[bool] = None        
+        description : Optional[str] = None
+
+        if current_package.version == most_recent_release.version:
+            is_version_matching = True
+            description = _MessageCollection.current_version_matches(current_package, most_recent_release)
+        else:
+            is_version_matching = False
+            description = _MessageCollection.current_version_doesnt_match(current_package, most_recent_release)
+
+        return (cast(bool, is_version_matching), cast(str, description))
+    def __create_status_detail(self, current_package : Package, most_recent_release : Release) -> StatusDetail:
+
+        '''Creates a StatusDetail object out of the provided current_package and most_recent_release.'''
+
+        is_version_matching, description = self.__compare(
+            current_package = current_package, 
+            most_recent_release = most_recent_release
+        )
+
+        status_detail : StatusDetail = StatusDetail(
+            current_package = current_package,
+            most_recent_release = most_recent_release,
+            is_version_matching = is_version_matching,
+            description = description
+        )
+
+        return status_detail
+
     def check(self, file_path : str, waiting_time : int = 5) -> None:
 
         if waiting_time < 5:
             raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, 5))
 
         l_session : LSession = self.__package_manager.load(file_path = file_path)
+
+        statuses : list[StatusDetail] = []
+        for current_package in l_session.packages:
+
+            f_session : FSession = self.__release_manager.fetch(package_name = current_package.name)
+            most_recent_release : Release = f_session.releases[0]
+            
+            status_detail : StatusDetail = self.__create_status_detail(
+                current_package = current_package, 
+                most_recent_release = most_recent_release
+            )
+            statuses.append(status_detail)
+
+            sleep(cast(float, waiting_time))
+
         
 
         # Load all the local packages
