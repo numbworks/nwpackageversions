@@ -21,6 +21,28 @@ from xml.etree.ElementTree import Element
 # CONSTANTS
 # DTOs
 @dataclass(frozen = True)
+class Package():
+
+    '''Represents an installed package.'''
+
+    name : str
+    version : str
+@dataclass(frozen = True)
+class LSession():
+
+    '''Represents a loading session.'''
+
+    packages : list[Package]
+    unparsed_lines : list[str]
+
+    def __str__(self):
+        return str(
+                "{ "
+                f"'packages': '{len(self.packages)}', "
+                f"'unparsed_lines': '{len(self.unparsed_lines)}'"
+                " }"                
+            )  
+@dataclass(frozen = True)
 class XMLItem():
 
     '''Represents the content of a <item></item> taken from a PyPi.org's releases.xml file.'''
@@ -84,28 +106,6 @@ class FSession():
                 f"'xml_items': '{len(self.xml_items)}'"
                 " }"                
             )   
-@dataclass(frozen = True)
-class Package():
-
-    '''Represents an installed package.'''
-
-    name : str
-    version : str
-@dataclass(frozen = True)
-class LSession():
-
-    '''Represents a loading session.'''
-
-    packages : list[Package]
-    unparsed_lines : list[str]
-
-    def __str__(self):
-        return str(
-                "{ "
-                f"'packages': '{len(self.packages)}', "
-                f"'unparsed_lines': '{len(self.unparsed_lines)}'"
-                " }"                
-            )  
 
 # STATIC CLASSES
 class LambdaCollection():
@@ -166,20 +166,143 @@ class _MessageCollection():
         return f"No loading strategy found for the provided file name. ('file_path': '{file_path}', 'supported_file_names' : [ 'requirements.txt', 'Dockerfile' ])"
 
 # CLASSES
+class LocalPackageManager():
+
+    '''This class collects all the logic related to local package management.'''
+
+    __file_reader_function : Callable[[str], str]
+
+    def __init__(
+            self, 
+            file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function()
+            ) -> None:
+
+        self.__file_reader_function = file_reader_function
+
+    def load_from_requirements(self, file_path : str) -> LSession:
+
+        '''
+            Expects a file_path to a "requirements.txt" file that looks like the following:
+
+                requests >= 2.26.0
+                asyncio == 3.4.3
+                typed-astunparse >= 2.1.4, == 2.*
+                dataclasses ~= 0.6
+                opencv-python==4.10.0.84
+                black==22.12.0
+                certifi==2022.12.7
+                ...
+
+            Returns a LSession:
+
+                packages = [
+                    Package(name = "requests", version = "2.26.0"),
+                    Package(name = "asyncio", version = "3.4.3"),
+                    Package(name = "typed-astunparse", version = "2.1.4"),
+                    Package(name = "dataclasses", version = "0.6"),
+                    Package(name = "opencv-python", version = "4.10.0.84"),
+                    Package(name = "black", version = "22.12.0")
+                ]
+
+                unparsed = [ 
+                    "Some unparsable line."
+                ]
+        '''
+
+        content : str = self.__file_reader_function(file_path)
+        pattern : str = r'^([a-zA-Z0-9\-]+)[\s]*[>=<~]*\s*([\d\.]+)'
+
+        packages : list[Package] = []
+        unparsed_lines : list[str] = []
+
+        for line in content.strip().splitlines():
+
+            match : Optional[Match] = re.match(pattern = pattern, string = line)
+
+            if match:
+                name, version = match.groups()
+                package : Package = Package(name=name, version=version)
+                packages.append(package)
+            else:
+                unparsed_lines.append(line)
+
+        l_session : LSession = LSession(
+            packages = packages,
+            unparsed_lines = unparsed_lines
+        )
+
+        return l_session
+    def load_from_dockerfile(self, file_path : str) -> LSession:
+
+        '''
+            Expects a file_path to a "Dockerfile" file that looks like the following:
+
+                FROM python:3.12.5-bookworm
+
+                RUN pip install requests==2.26.0
+                RUN pip install beautifulsoup4==4.10.0
+                ...
+
+            Returns a LSession:
+
+                packages = [
+                    Package(name = "requests", version = "2.26.0"),
+                    Package(name = "beautifulsoup4", version = "4.10.0"),
+                    ...
+                ]
+
+                unparsed = [ 
+                    "Some unparsable line."
+                ]
+        '''
+
+        content : str = self.__file_reader_function(file_path)
+        pattern : Pattern = re.compile(r"pip install ([\w\-\_]+)(==)([\d\.]+)")
+
+        packages : list[Package] = []
+        unparsed_lines : list[str] = []
+
+        for line in content.strip().splitlines():
+
+            match : Optional[Match] = pattern.search(string = line)
+
+            if match:
+                package : Package = Package(name = match.group(1), version = match.group(3))
+                packages.append(package)
+            else:
+                unparsed_lines.append(line)
+
+        l_session : LSession = LSession(
+            packages = packages,
+            unparsed_lines = unparsed_lines
+        )
+
+        return l_session
+    def load(self, file_path : str) -> LSession:
+
+        '''It supports two files: "requirements.txt" and "Dockerfile"'''
+
+        l_session : Optional[LSession] = None
+
+        if file_path.endswith("requirements.txt"):
+            l_session = self.load_from_requirements(file_path = file_path)
+        elif file_path.endswith("Dockerfile"):
+            l_session = self.load_from_dockerfile(file_path = file_path)
+        else:
+            raise Exception(_MessageCollection.no_loading_strategy_found(file_path))
+        
+        return cast(LSession, l_session)
 class PyPiReleaseManager():
 
     '''This is a client for PyPi release pages.'''
 
-    __logging_function : Callable[[str], None]
     __get_function : Callable[[str], Response]
 
     def __init__(
             self,
-            logging_function : Callable[[str], None],
             get_function : Callable[[str], Response] = LambdaCollection.get_function()
             ) -> None:
 
-        self.__logging_function = logging_function
         self.__get_function = get_function
 
     def __format_url(self, package_name : str) -> str:
@@ -392,154 +515,24 @@ class PyPiReleaseManager():
         )
 
         return f_session
-class LocalPackageManager():
-
-    '''This class collects all the logic related to local package management.'''
-
-    __logging_function : Callable[[str], None]
-    __file_reader_function : Callable[[str], str]
-
-    def __init__(
-            self, 
-            logging_function : Callable[[str], None],
-            file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function()
-            ) -> None:
-
-        self.__logging_function = logging_function        
-        self.__file_reader_function = file_reader_function
-
-    def load_from_requirements(self, file_path : str) -> LSession:
-
-        '''
-            Expects a file_path to a "requirements.txt" file that looks like the following:
-
-                requests >= 2.26.0
-                asyncio == 3.4.3
-                typed-astunparse >= 2.1.4, == 2.*
-                dataclasses ~= 0.6
-                opencv-python==4.10.0.84
-                black==22.12.0
-                certifi==2022.12.7
-                ...
-
-            Returns a LSession:
-
-                packages = [
-                    Package(name = "requests", version = "2.26.0"),
-                    Package(name = "asyncio", version = "3.4.3"),
-                    Package(name = "typed-astunparse", version = "2.1.4"),
-                    Package(name = "dataclasses", version = "0.6"),
-                    Package(name = "opencv-python", version = "4.10.0.84"),
-                    Package(name = "black", version = "22.12.0")
-                ]
-
-                unparsed = [ 
-                    "Some unparsable line."
-                ]
-        '''
-
-        content : str = self.__file_reader_function(file_path)
-        pattern : str = r'^([a-zA-Z0-9\-]+)[\s]*[>=<~]*\s*([\d\.]+)'
-
-        packages : list[Package] = []
-        unparsed_lines : list[str] = []
-
-        for line in content.strip().splitlines():
-
-            match : Optional[Match] = re.match(pattern = pattern, string = line)
-
-            if match:
-                name, version = match.groups()
-                package : Package = Package(name=name, version=version)
-                packages.append(package)
-            else:
-                unparsed_lines.append(line)
-
-        l_session : LSession = LSession(
-            packages = packages,
-            unparsed_lines = unparsed_lines
-        )
-
-        return l_session
-    def load_from_dockerfile(self, file_path : str) -> LSession:
-
-        '''
-            Expects a file_path to a "Dockerfile" file that looks like the following:
-
-                FROM python:3.12.5-bookworm
-
-                RUN pip install requests==2.26.0
-                RUN pip install beautifulsoup4==4.10.0
-                ...
-
-            Returns a LSession:
-
-                packages = [
-                    Package(name = "requests", version = "2.26.0"),
-                    Package(name = "beautifulsoup4", version = "4.10.0"),
-                    ...
-                ]
-
-                unparsed = [ 
-                    "Some unparsable line."
-                ]
-        '''
-
-        content : str = self.__file_reader_function(file_path)
-        pattern : Pattern = re.compile(r"pip install ([\w\-\_]+)(==)([\d\.]+)")
-
-        packages : list[Package] = []
-        unparsed_lines : list[str] = []
-
-        for line in content.strip().splitlines():
-
-            match : Optional[Match] = pattern.search(string = line)
-
-            if match:
-                package : Package = Package(name = match.group(1), version = match.group(3))
-                packages.append(package)
-            else:
-                unparsed_lines.append(line)
-
-        l_session : LSession = LSession(
-            packages = packages,
-            unparsed_lines = unparsed_lines
-        )
-
-        return l_session
-    def load(self, file_path : str) -> LSession:
-
-        '''It supports two files: "requirements.txt" and "Dockerfile"'''
-
-        l_session : Optional[LSession] = None
-
-        if file_path.endswith("requirements.txt"):
-            l_session = self.load_from_requirements(file_path = file_path)
-        elif file_path.endswith("Dockerfile"):
-            l_session = self.load_from_dockerfile(file_path = file_path)
-        else:
-            raise Exception(_MessageCollection.no_loading_strategy_found(file_path))
-        
-        return cast(LSession, l_session)
-
 class StatusChecker():
 
     '''This class collects all the logic related to local package management.'''
 
-    __logging_function : Callable[[str], None]
     __package_manager : LocalPackageManager
     __release_manager : PyPiReleaseManager
+    __logging_function : Callable[[str], None]
 
     def __init__(
             self, 
-            logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
-            package_manager : LocalPackageManager = LocalPackageManager(logging_function = LambdaCollection.logging_function()),
-            release_manager : PyPiReleaseManager = PyPiReleaseManager(logging_function = LambdaCollection.logging_function())
+            package_manager : LocalPackageManager = LocalPackageManager(),
+            release_manager : PyPiReleaseManager = PyPiReleaseManager(),
+            logging_function : Callable[[str], None] = LambdaCollection.logging_function()
             ) -> None:
-
-        self.__logging_function = logging_function        
+      
         self.__package_manager = package_manager
         self.__release_manager = release_manager
+        self.__logging_function = logging_function 
 
     def check(self, file_path : str, waiting_time : int = 5) -> None:
 
@@ -548,6 +541,7 @@ class StatusChecker():
         # Compare
         # Assembe a status
         # Print and return the status
+        pass
 
 # MAIN
 if __name__ == "__main__":
