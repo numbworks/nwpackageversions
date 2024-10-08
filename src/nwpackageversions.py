@@ -168,6 +168,10 @@ class _MessageCollection():
     def zero_packages_found(file_path : str) -> str:
         return f"Zero packages found in '{file_path}'. Please open the documentation to check the expected layout of the supported files."
     
+    @staticmethod
+    def waiting_time_cant_be_less_than(waiting_time : int, expected : int) -> str:
+        return f"Waiting time ('{str(waiting_time)}') can't be less than {expected} seconds."
+
 # CLASSES
 class LocalPackageManager():
 
@@ -541,6 +545,12 @@ class StatusChecker():
         self.__logging_function = logging_function 
 
     def check(self, file_path : str, waiting_time : int = 5) -> None:
+
+        if waiting_time < 5:
+            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, 5))
+
+        l_session : LSession = self.__package_manager.load(file_path = file_path)
+        
 
         # Load all the local packages
         # Fetch the information for each of them
