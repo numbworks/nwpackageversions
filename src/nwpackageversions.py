@@ -114,6 +114,19 @@ class StatusDetail():
     most_recent_release : Release
     is_version_matching : bool
     description : str
+
+    def __str__(self):
+        return str(
+                "{ "
+                f"'package_name': '{self.current_package.name}', "
+                f"'current_version': '{self.current_package.version}', "
+                f"'most_recent_release_version': '{self.most_recent_release.version}', "
+                f"'is_version_matching': '{str(self.is_version_matching)}', "                                
+                f"'description': '{self.description}'"
+                " }"                
+            )
+    def __repr__(self):
+        return self.__str__()
 @dataclass(frozen = True)
 class StatusSummary():
 
@@ -125,6 +138,17 @@ class StatusSummary():
     mismatching : int
     mismatching_prc : str
     details : list[StatusDetail]
+
+    def __str__(self):
+        return str(
+                "{ "
+                f"'total_packages': '{str(self.total_packages)}', "
+                f"'matching': '{str(self.matching)}', "
+                f"'matching_prc': '{self.matching_prc}', "
+                f"'mismatching': '{str(self.mismatching)}', "
+                f"'mismatching_prc': '{self.mismatching_prc}'"
+                " }"                
+            )  
 
 # STATIC CLASSES
 class LambdaCollection():
@@ -646,12 +670,30 @@ class StatusChecker():
 
     def check(self, file_path : str, waiting_time : int = 5) -> StatusSummary:
 
+        ''''''
+
         if waiting_time < 5:
             raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, 5))
 
+        self.__logging_function("The status checking operation has started!")
+        self.__logging_function(f"The list of local packages will be loaded from the following 'file_path': '{file_path}'.")
+        self.__logging_function(f"The 'waiting_time' between each fetching request will be: '{str(waiting_time)}' seconds.")
+
         l_session : LSession = self.__package_manager.load(file_path = file_path)
+
+        self.__logging_function(f"'{str(len(l_session.packages))}' local packages has been found and successfully loaded.")
+        self.__logging_function("Now starting to evaluate the status of each local package...")
+
         status_details : list[StatusDetail] = self.__create_status_details(l_session = l_session, waiting_time = waiting_time)
+
+        self.__logging_function("The status evaluation operation has been successfully completed.")
+
+
+        self.__logging_function("Now starting the creation of a status summary...")
+
         status_summary : StatusSummary = self.__create_status_summary(status_details = status_details)
+
+        self.__logging_function("The status summary has been successfully created.")
 
         return status_summary
 
