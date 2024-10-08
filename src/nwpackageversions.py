@@ -116,15 +116,7 @@ class StatusDetail():
     description : str
 
     def __str__(self):
-        return str(
-                "{ "
-                f"'package_name': '{self.current_package.name}', "
-                f"'current_version': '{self.current_package.version}', "
-                f"'most_recent_release_version': '{self.most_recent_release.version}', "
-                f"'is_version_matching': '{str(self.is_version_matching)}', "                                
-                f"'description': '{self.description}'"
-                " }"                
-            )
+        return str("{ " f"'description': '{self.description}'" " }")
     def __repr__(self):
         return self.__str__()
 @dataclass(frozen = True)
@@ -222,10 +214,10 @@ class _MessageCollection():
         return f"Waiting time ('{str(waiting_time)}') can't be less than {expected} seconds."
     @staticmethod
     def current_version_matches(current_package : Package, most_recent_release : Release) -> str:
-        return f"Package: '{current_package.name}'. The current version ('{current_package.version}' matches with the most recent release ('{most_recent_release.version}'))."
+        return f"The current version ('{current_package.version}') of '{current_package.name}' matches with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}')."
     @staticmethod
     def current_version_doesnt_match(current_package : Package, most_recent_release : Release) -> str:
-        return f"Package: '{current_package.name}'. The current version ('{current_package.version}' doesn't match with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}'))."
+        return f"The current version ('{current_package.version}') of '{current_package.name}' doesn't match with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}')."
     @staticmethod
     def status_checking_operation_started() -> str:
         return "The status checking operation has started!"
