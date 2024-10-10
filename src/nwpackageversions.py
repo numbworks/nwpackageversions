@@ -103,7 +103,7 @@ class FSession():
         return str(
                 "{ "
                 f"'package_name': '{self.package_name}', "
-                f"'most_recent_release': '('{self.most_recent_release.version}', '{self.most_recent_release.date.strftime("%Y-%m-%d")}')', "
+                f"'most_recent_release': '{mrr_formatter(self.most_recent_release)}', "
                 f"'releases': '{len(self.releases)}', "
                 f"'xml_items': '{len(self.xml_items)}'"
                 " }"                

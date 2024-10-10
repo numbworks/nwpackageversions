@@ -137,7 +137,7 @@ class FSessionTestCase(unittest.TestCase):
 
     def setUp(self):
 
-        self.package_name = "numpy"
+        self.package_name : str = "numpy"
 
         self.releases: list[Release] = [
             Release(package_name="numpy", version="2.1.2", date=datetime.strptime("2024-10-05", "%Y-%m-%d")),
@@ -151,6 +151,8 @@ class FSessionTestCase(unittest.TestCase):
             version = "2.1.2",
             date = datetime(2024, 10, 5, 18, 28, 18)
         )
+
+        self.mrr_formatter : Callable[[Release], str] = lambda mrr : f"('{mrr.version}', '{mrr.date.strftime("%Y-%m-%d")}')"
 
         self.xml_items: list[XMLItem] = [
             XMLItem(title="2.1.2", link="https://pypi.org/project/numpy/2.1.2/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Sat, 05 Oct 2024 18:28:18 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sat, 05 Oct 2024 18:28:18 GMT"),
@@ -181,8 +183,7 @@ class FSessionTestCase(unittest.TestCase):
 		# Arrange
         expected: str = (
             "{ 'package_name': 'numpy', "
-            "'most_recent_version': '2.1.2', "
-            "'most_recent_date': '2024-10-05', "
+            f"'most_recent_release': '{self.mrr_formatter(self.most_recent_release)}', "
             "'releases': '4', "
             "'xml_items': '4' }"
         )		
@@ -190,8 +191,7 @@ class FSessionTestCase(unittest.TestCase):
         # Act
         f_session : FSession = FSession(
             package_name = self.package_name,
-            most_recent_version = self.most_recent_version,
-            most_recent_date = self.most_recent_date,
+            most_recent_release = self.most_recent_release,
             releases = self.releases,
             xml_items = self.xml_items
         )
