@@ -137,15 +137,21 @@ class FSessionTestCase(unittest.TestCase):
 
     def setUp(self):
 
-        self.package_name: str = "numpy"
-        self.most_recent_version: str = "2.1.2"
-        self.most_recent_date: datetime = datetime(2024, 10, 5, 18, 28, 18)
+        self.package_name = "numpy"
+
         self.releases: list[Release] = [
             Release(package_name="numpy", version="2.1.2", date=datetime.strptime("2024-10-05", "%Y-%m-%d")),
             Release(package_name="numpy", version="2.1.1", date=datetime.strptime("2024-09-03", "%Y-%m-%d")),
             Release(package_name="numpy", version="2.0.2", date=datetime.strptime("2024-08-26", "%Y-%m-%d")),
             Release(package_name="numpy", version="2.1.0", date=datetime.strptime("2024-08-18", "%Y-%m-%d"))
         ]
+
+        self.most_recent_release : Release = Release(
+            package_name = "numpy",
+            version = "2.1.2",
+            date = datetime(2024, 10, 5, 18, 28, 18)
+        )
+
         self.xml_items: list[XMLItem] = [
             XMLItem(title="2.1.2", link="https://pypi.org/project/numpy/2.1.2/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Sat, 05 Oct 2024 18:28:18 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sat, 05 Oct 2024 18:28:18 GMT"),
             XMLItem(title="2.1.1", link="https://pypi.org/project/numpy/2.1.1/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Tue, 03 Sep 2024 15:01:06 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Tue, 03 Sep 2024 15:01:06 GMT"),
@@ -158,16 +164,16 @@ class FSessionTestCase(unittest.TestCase):
         # Act
         f_session : FSession = FSession(
             package_name = self.package_name,
-            most_recent_version = self.most_recent_version,
-            most_recent_date = self.most_recent_date,
+            most_recent_release = self.most_recent_release,
             releases = self.releases,
             xml_items = self.xml_items
         )
 		
 		# Assert
         self.assertEqual(f_session.package_name, self.package_name)
-        self.assertEqual(f_session.most_recent_version, self.most_recent_version)
-        self.assertEqual(f_session.most_recent_date, self.most_recent_date)
+        self.assertEqual(f_session.most_recent_release.package_name, self.most_recent_release.package_name)
+        self.assertEqual(f_session.most_recent_release.version, self.most_recent_release.version)
+        self.assertEqual(f_session.most_recent_release.date, self.most_recent_release.date)
         self.assertEqual(f_session.releases, self.releases)
         self.assertEqual(f_session.xml_items, self.xml_items)
     def test_fsession_shouldreturnexpectedstring_whenargumentsarenotnone(self):

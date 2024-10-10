@@ -97,6 +97,9 @@ class FSession():
     xml_items : list[XMLItem]
 
     def __str__(self):
+
+        mrr_formatter : Callable[[Release], str] = lambda mrr : f"('{mrr.version}', '{mrr.date.strftime("%Y-%m-%d")}')"
+
         return str(
                 "{ "
                 f"'package_name': '{self.package_name}', "
