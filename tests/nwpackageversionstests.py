@@ -4,14 +4,56 @@ import sys
 import unittest
 from datetime import datetime
 from requests import Response
-from typing import Optional, Callable, cast
+from typing import Any, Optional, Callable, cast
 from unittest.mock import patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import LambdaCollection, XMLItem, Release, FSession
+from nwpackageversions import LSession, LambdaCollection, Package, XMLItem, Release, FSession
 
 # SUPPORT METHODS
+class SupportMethodProvider():
+
+    '''Collection of generic purpose test-aiding methods.'''
+
+    @staticmethod
+    def __are_lists_equal(list1 : list[Any], list2 : list[Any], comparer : Callable[[Any, Any], bool]) -> bool:
+
+        '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
+
+        if (list1 == None and list2 == None):
+            return True
+
+        if (list1 == None or list2 == None):
+            return False
+
+        if (len(list1) != len(list2)):
+            return False
+
+        for i in range(len(list1)):
+            if (comparer(list1[i], list2[i]) == False):
+                return False
+
+        return True
+
+    @staticmethod
+    def are_packages_equal(p1 : Package, p2 : Package) -> bool:
+
+        '''Returns True if all the fields of the two objects contain the same values.'''
+
+        return (p1.name == p2.name and
+                    p1.version == p2.version)
+    @staticmethod
+    def are_lists_of_packages_equal(list1 : list[Package], list2 : list[Package]) -> bool:
+
+        '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
+
+        return SupportMethodProvider.__are_lists_equal(
+                list1 = list1, 
+                list2 = list2, 
+                comparer = lambda p1,p2 : SupportMethodProvider.are_packages_equal(p1, p2)
+            )
+
 # TEST CLASSES
 class XMLItemTestCase(unittest.TestCase):
 
@@ -248,6 +290,39 @@ class LambdaCollectionTestCase(unittest.TestCase):
         # Assert
         open_mock.assert_called_once_with(file_path, "r", encoding = "utf-8")
         self.assertEqual(str(actual), expected)
+class LSessionTestCase(unittest.TestCase):
+
+    def setUp(self):
+
+        self.packages : list[Package] = [
+            Package(name = "requests", version = "2.26.0"),
+            Package(name = "asyncio", version = "3.4.3"),
+            Package(name = "typed-astunparse", version = "2.1.4"),
+            Package(name = "opencv-python", version = "4.10.0.84"),
+            Package(name = "black", version = "22.12.0")
+        ]
+        self.unparsed_lines : list[str] = [
+            "FROM python:3.12.5-bookworm", 
+            "RUN wget https://github.com/jgm/pandoc/releases/download/3.4/pandoc-3.4-1-amd64.deb \\", 
+            "    && dpkg -i pandoc-3.4-1-amd64.deb \\", 
+            "    && rm -f pandoc-3.4-1-amd64.deb"
+        ]
+    def test_lsession_shouldinitializeasexpected_wheninvoked(self):
+	
+		# Arrange
+        # Act
+        l_session : LSession = LSession(
+            packages = self.packages,
+            unparsed_lines = self.unparsed_lines
+        )
+		
+		# Assert
+        self.assertTrue(
+            SupportMethodProvider.are_lists_of_packages_equal(
+                list1 = l_session.packages,
+                list2 = self.packages
+            ))
+        self.assertEqual(l_session.unparsed_lines, self.unparsed_lines)
 
 # Main
 if __name__ == "__main__":
