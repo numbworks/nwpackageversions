@@ -387,7 +387,7 @@ class StatusDetailTestCase(unittest.TestCase):
 
         # Act
         actual_str : str = str(status_detail)
-        actual_repr : str = str(status_detail)
+        actual_repr : str = status_detail.__repr__()
 
         # Assert
         self.assertEqual(actual_str, expected)
