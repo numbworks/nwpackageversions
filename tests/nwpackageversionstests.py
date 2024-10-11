@@ -473,7 +473,9 @@ class StatusSummaryTestCase(unittest.TestCase):
         self.details : list[StatusDetail] = [
 			self.status_detail1, 
 			self.status_detail2
-		]		
+		]
+
+        self.expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
     def test_statussummary_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
@@ -499,6 +501,23 @@ class StatusSummaryTestCase(unittest.TestCase):
                 list1 = status_summary.details,
                 list2 = self.details
             ))
+    def test_statussummary_shouldreturnexpectedstring_wheninvoked(self) -> None:
+        
+		# Arrange
+        status_summary : StatusSummary = StatusSummary(
+            total_packages = self.total_packages,
+            matching = self.matching,
+            matching_prc = self.matching_prc,
+            mismatching = self.mismatching,
+            mismatching_prc = self.mismatching_prc,
+            details = self.details
+        )
+
+        # Act
+        actual : str = str(status_summary)
+
+        # Assert
+        self.assertEqual(actual, self.expected) 
 
 # Main
 if __name__ == "__main__":
