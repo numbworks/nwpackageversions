@@ -9,7 +9,7 @@ from unittest.mock import patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import LSession, LambdaCollection, Package, StatusDetail, XMLItem, Release, FSession
+from nwpackageversions import LSession, LambdaCollection, Package, StatusDetail, StatusSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -41,8 +41,10 @@ class SupportMethodProvider():
 
         '''Returns True if all the fields of the two objects contain the same values.'''
 
-        return (p1.name == p2.name and
-                    p1.version == p2.version)
+        return (
+            p1.name == p2.name and
+            p1.version == p2.version
+        )
     @staticmethod
     def are_lists_of_packages_equal(list1 : list[Package], list2 : list[Package]) -> bool:
 
@@ -53,6 +55,50 @@ class SupportMethodProvider():
                 list2 = list2, 
                 comparer = lambda p1,p2 : SupportMethodProvider.are_packages_equal(p1, p2)
             )
+
+    @staticmethod
+    def are_releases_equal(r1 : Release, r2 : Release) -> bool:
+
+        '''Returns True if all the fields of the two objects contain the same values.'''
+
+        return (
+            r1.package_name == r2.package_name and
+            r1.version == r2.version and
+            r1.date == r2.date
+        )
+    @staticmethod
+    def are_lists_of_releases_equal(list1 : list[Release], list2 : list[Release]) -> bool:
+
+        '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
+
+        return SupportMethodProvider.__are_lists_equal(
+                list1 = list1, 
+                list2 = list2, 
+                comparer = lambda p1,p2 : SupportMethodProvider.are_releases_equal(p1, p2)
+            )
+
+    @staticmethod
+    def are_statusdetails_equal(sd1 : StatusDetail, sd2 : StatusDetail) -> bool:
+
+        '''Returns True if all the fields of the two objects contain the same values.'''
+
+        return (
+            SupportMethodProvider.are_packages_equal(sd1.current_package, sd2.current_package) and
+            SupportMethodProvider.are_releases_equal(sd1.most_recent_release, sd2.most_recent_release) and
+            sd1.is_version_matching == sd2.is_version_matching and
+            sd1.description == sd2.description
+            )
+    @staticmethod
+    def are_lists_of_statusdetails_equal(list1 : list[StatusDetail], list2 : list[StatusDetail]) -> bool:
+
+        '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
+
+        return SupportMethodProvider.__are_lists_equal(
+                list1 = list1, 
+                list2 = list2, 
+                comparer = lambda p1,p2 : SupportMethodProvider.are_statusdetails_equal(p1, p2)
+            )
+
 
 # TEST CLASSES
 class XMLItemTestCase(unittest.TestCase):
@@ -358,6 +404,7 @@ class StatusDetailTestCase(unittest.TestCase):
             "The current version ('1.26.3') of 'numpy' doesn't match with the most recent release "
             "('2.1.2', '2024-10-05')."
         )
+        self.expected2 : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
     def test_statusdetail_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
@@ -377,7 +424,6 @@ class StatusDetailTestCase(unittest.TestCase):
     def test_statusdetail_shouldreturnexpectedstring_wheninvoked(self) -> None:
         
 		# Arrange
-        expected : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
         status_detail : StatusDetail = StatusDetail(
             current_package = self.package2,
             most_recent_release = self.release2,
@@ -390,8 +436,67 @@ class StatusDetailTestCase(unittest.TestCase):
         actual_repr : str = status_detail.__repr__()
 
         # Assert
-        self.assertEqual(actual_str, expected)
-        self.assertEqual(actual_repr, expected)
+        self.assertEqual(actual_str, self.expected2)
+        self.assertEqual(actual_repr, self.expected2)
+class StatusSummaryTestCase(unittest.TestCase):
+
+    def setUp(self) -> None:
+        
+        self.package1 : Package = Package(name = "black", version = "22.12.0")
+        self.release1 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 5, 15))
+        self.is_version_matching1 : bool = True
+        self.description1 : str = "The current version matches the most recent release."
+		
+        self.status_detail1 : StatusDetail = StatusDetail(
+            current_package = self.package1,
+            most_recent_release = self.release1,
+            is_version_matching = self.is_version_matching1,
+            description = self.description1
+        )
+        
+        self.package2 : Package = Package(name = "opencv-python", version = "4.5.0")
+        self.release2 : Release = Release(package_name = "opencv-python", version = "4.10.0", date = datetime(2023, 8, 12))
+        self.is_version_matching2 : bool = False
+        self.description2 : str = "The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12')."
+		
+        self.status_detail2 : StatusDetail = StatusDetail(
+            current_package = self.package2,
+            most_recent_release = self.release2,
+            is_version_matching = self.is_version_matching2,
+            description = self.description2
+        )
+
+        self.total_packages : int = 2
+        self.matching : int = 1
+        self.matching_prc : str = "50.00%"
+        self.mismatching : int = 1
+        self.mismatching_prc : str = "50.00%"
+        self.details : list[StatusDetail] = [
+			self.status_detail1, 
+			self.status_detail2
+		]		
+    def test_statussummary_shouldinitializeasexpected_wheninvoked(self) -> None:
+	
+        # Arrange
+        # Act
+        status_summary : StatusSummary = StatusSummary(
+            total_packages = self.total_packages,
+            matching = self.matching,
+            matching_prc = self.matching_prc,
+            mismatching = self.mismatching,
+            mismatching_prc = self.mismatching_prc,
+            details = self.details
+        )
+
+        # Assert
+        self.assertEqual(status_summary.total_packages, self.total_packages)
+        self.assertEqual(status_summary.matching, self.matching)
+        self.assertEqual(status_summary.matching_prc, self.matching_prc)
+        self.assertEqual(status_summary.mismatching, self.mismatching)
+        self.assertEqual(status_summary.mismatching_prc, self.mismatching_prc)
+        self.assertEqual(len(status_summary.details), len(self.details))
+        # self.assertEqual(status_summary.details[0], status_detail1)
+        # self.assertEqual(status_summary.details[1], status_detail2)
 
 # Main
 if __name__ == "__main__":
