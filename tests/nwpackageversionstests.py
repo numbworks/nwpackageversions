@@ -9,7 +9,7 @@ from unittest.mock import patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import LSession, LambdaCollection, Package, XMLItem, Release, FSession
+from nwpackageversions import LSession, LambdaCollection, Package, StatusDetail, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -323,6 +323,75 @@ class LSessionTestCase(unittest.TestCase):
                 list2 = self.packages
             ))
         self.assertEqual(l_session.unparsed_lines, self.unparsed_lines)
+    def test_lsession_shouldreturnexpectedstring_wheninvoked(self):
+        
+		# Arrange
+        expected: str = (
+                "{ "
+                f"'packages': '{len(self.packages)}', "
+                f"'unparsed_lines': '{len(self.unparsed_lines)}'"
+                " }"                
+            )		
+		
+        # Act
+        l_session : LSession = LSession(
+            packages = self.packages,
+            unparsed_lines = self.unparsed_lines
+        )
+        actual : str = str(l_session)
+
+        # Assert
+        self.assertEqual(actual, expected)
+class StatusDetailTestCase(unittest.TestCase):
+
+    def setUp(self) -> None:
+
+        self.package1 : Package = Package(name = "requests", version = "2.26.0")
+        self.release1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2023, 10, 5))
+        self.is_version_matching1 : bool = True
+        self.description1 : str = "The current version matches the most recent release."
+
+        self.package2 : Package = Package(name = "numpy", version = "1.26.3")
+        self.release2 : Release = Release(package_name = "numpy", version = "2.1.2", date = datetime(2024, 10, 5))
+        self.is_version_matching2 : bool = False
+        self.description2 : str = (
+            "The current version ('1.26.3') of 'numpy' doesn't match with the most recent release "
+            "('2.1.2', '2024-10-05')."
+        )
+    def test_statusdetail_shouldinitializeasexpected_wheninvoked(self) -> None:
+	
+        # Arrange
+        # Act
+        status_detail : StatusDetail = StatusDetail(
+            current_package = self.package1,
+            most_recent_release = self.release1,
+            is_version_matching = self.is_version_matching1,
+            description = self.description1
+        )
+
+        # Assert
+        self.assertEqual(status_detail.current_package, self.package1)
+        self.assertEqual(status_detail.most_recent_release, self.release1)
+        self.assertTrue(status_detail.is_version_matching)
+        self.assertEqual(status_detail.description, self.description1)
+    def test_statusdetail_shouldreturnexpectedstring_wheninvoked(self) -> None:
+        
+		# Arrange
+        expected : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
+        status_detail : StatusDetail = StatusDetail(
+            current_package = self.package2,
+            most_recent_release = self.release2,
+            is_version_matching = self.is_version_matching2,
+            description = self.description2
+        )
+
+        # Act
+        actual_str : str = str(status_detail)
+        actual_repr : str = str(status_detail)
+
+        # Assert
+        self.assertEqual(actual_str, expected)
+        self.assertEqual(actual_repr, expected)
 
 # Main
 if __name__ == "__main__":
