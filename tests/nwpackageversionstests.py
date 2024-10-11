@@ -99,7 +99,6 @@ class SupportMethodProvider():
                 comparer = lambda p1,p2 : SupportMethodProvider.are_statusdetails_equal(p1, p2)
             )
 
-
 # TEST CLASSES
 class XMLItemTestCase(unittest.TestCase):
 
@@ -495,8 +494,11 @@ class StatusSummaryTestCase(unittest.TestCase):
         self.assertEqual(status_summary.mismatching, self.mismatching)
         self.assertEqual(status_summary.mismatching_prc, self.mismatching_prc)
         self.assertEqual(len(status_summary.details), len(self.details))
-        # self.assertEqual(status_summary.details[0], status_detail1)
-        # self.assertEqual(status_summary.details[1], status_detail2)
+        self.assertTrue(
+            SupportMethodProvider.are_lists_of_statusdetails_equal(
+                list1 = status_summary.details,
+                list2 = self.details
+            ))
 
 # Main
 if __name__ == "__main__":
