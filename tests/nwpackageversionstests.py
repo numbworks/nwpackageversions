@@ -846,7 +846,6 @@ class StatusCheckerTestCase(unittest.TestCase):
         self.package2 : Package = Package(name = "pandas", version = "2.2.2")
         self.release2 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
         self.expected_tpl2 : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(self.package2, self.release2))
-  
     def test_statuschecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
         
         # Arrange
@@ -891,6 +890,18 @@ class StatusCheckerTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(actual, expected)
+    def test_check_shouldraiseexpectedexceptionandmessage_whenwaitingtimelessthanminimum(self):
+        
+        # Arrange
+        file_path : str = r"C:/Dockerfile"
+        waiting_time : int = 2
+        minimum_wt : int = 5
+        expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
+
+        # Act, Assert
+        with self.assertRaises(expected_exception = Exception, msg = expected):
+            status_checker : StatusChecker = StatusChecker()
+            status_checker.check(file_path = file_path, waiting_time = waiting_time)
 
 # Main
 if __name__ == "__main__":
