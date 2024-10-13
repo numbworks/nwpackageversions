@@ -561,26 +561,25 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
 
+        self.file_reader_function : Callable[[str], str] = LambdaCollection.file_reader_function()
         self.file_reader_mock: Callable[[str], str] = Mock(return_value = "content")
 
     def test_localpackageloader_shouldinitializeasexpected_wheninvoked(self) -> None:
         
         # Arrange
-        file_reader_function: Callable[[str], str] = LambdaCollection.file_reader_function()
-
         # Act
-        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = file_reader_function)
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_function)
 
         # Assert
         self.assertIsInstance(package_loader, LocalPackageLoader)
     def test_cleanunparsedlines_shouldremovermptystrings_whenlinesprovided(self) -> None:
         
         # Arrange
-        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
         unparsed_lines : list[str] = ["line1", "", "line2", ""]
         expected : list[str] = ["line1", "line2"]
 
         # Act
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
         actual : list[str] = package_loader._LocalPackageLoader__clean_unparsed_lines(unparsed_lines = unparsed_lines) # type: ignore
 
         # Assert
@@ -595,9 +594,8 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
     def test_isrequirements_shouldreturnexpectedbool_wheninvoked(self, file_path : str, expected : bool) -> None:
         
         # Arrange
-        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
-
         # Act
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
         actual : bool = package_loader._LocalPackageLoader__is_requirements(file_path) # type: ignore
 
         # Assert
@@ -612,9 +610,8 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
     def test_isdockerfile_shouldreturnexpectedbool_wheninvoked(self, file_path : str, expected : bool) -> None:
         
         # Arrange
-        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
-
         # Act
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
         actual : bool = package_loader._LocalPackageLoader__is_dockerfile(file_path) # type: ignore
 
         # Assert
@@ -680,6 +677,15 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
                 ls1 = actual,
                 ls2 = expected
             ))
+    def test_load_shouldraiseexception_whennotsupportedfilenameprovided(self) -> None:
+        
+        # Arrange
+        file_path : str = "randomfile.txt"
+
+        # Act, Assert
+        with self.assertRaises(Exception):
+            package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
+            package_loader.load(file_path = file_path)
 
 # Main
 if __name__ == "__main__":
