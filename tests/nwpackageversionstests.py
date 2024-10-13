@@ -827,34 +827,51 @@ class StatusCheckerTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
 
-        pass
+        self.package1 : Package = Package(name = "pandas", version = "2.2.3")
+        self.release1 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
+        self.expected_tpl1 : Tuple[bool, str] = (True, _MessageCollection.current_version_matches(self.package1, self.release1))
+        self.expected_sd1 : StatusDetail = StatusDetail(
+            current_package = self.package1,
+            most_recent_release = self.release1,
+            is_version_matching = self.expected_tpl1[0],
+            description = self.expected_tpl1[1]
+        )
+
+        self.package2 : Package = Package(name = "pandas", version = "2.2.2")
+        self.release2 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
+        self.expected_tpl2 : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(self.package2, self.release2))
   
     def test_statuschecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
         
         # Arrange
-        package : Package = Package(name = "pandas", version = "2.2.3")
-        release : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
-        expected : Tuple[bool, str] = (True, _MessageCollection.current_version_matches(package, release))
-
         # Act
         status_checker : StatusChecker = StatusChecker()
-        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = package, most_recent_release = release) # type: ignore
+        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = self.package1, most_recent_release = self.release1) # type: ignore
         
         # Assert
-        self.assertEqual(actual, expected)
+        self.assertEqual(actual, self.expected_tpl1)
     def test_statuschecker_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
         
         # Arrange
-        package : Package = Package(name = "pandas", version = "2.2.2")
-        release : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
-        expected : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(package, release))
-
         # Act
         status_checker : StatusChecker = StatusChecker()
-        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = package, most_recent_release = release) # type: ignore
+        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = self.package2, most_recent_release = self.release2) # type: ignore
         
         # Assert
-        self.assertEqual(actual, expected)
+        self.assertEqual(actual, self.expected_tpl2)
+    def test_createstatusdetail_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
+        
+        # Arrange
+        # Act
+        status_checker : StatusChecker = StatusChecker()
+        actual : StatusDetail = status_checker._StatusChecker__create_status_detail(current_package = self.package1, most_recent_release = self.release1) # type: ignore
+        
+        # Assert
+        self.assertTrue(
+            SupportMethodProvider.are_statusdetails_equal(
+                sd1 = actual,
+                sd2 = self.expected_sd1
+            ))
 
 # Main
 if __name__ == "__main__":
