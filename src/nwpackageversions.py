@@ -440,7 +440,7 @@ class LocalPackageLoader():
             raise Exception(_MessageCollection.zero_packages_found(file_path))
 
         return cast(LSession, l_session)
-class PyPiReleaseManager():
+class PyPiReleaseFetcher():
 
     '''This is a client for PyPi release pages.'''
 
@@ -651,7 +651,7 @@ class StatusChecker():
     '''This class collects all the logic related to package status checking.'''
 
     __package_loader : LocalPackageLoader
-    __release_manager : PyPiReleaseManager
+    __release_fetcher : PyPiReleaseFetcher
     __logging_function : Callable[[str], None]
     __list_logging_function : Callable[[list[Any]], None]
     __sleeping_function : Callable[[int], None]
@@ -659,14 +659,14 @@ class StatusChecker():
     def __init__(
             self, 
             package_loader : LocalPackageLoader = LocalPackageLoader(),
-            release_manager : PyPiReleaseManager = PyPiReleaseManager(),
+            release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(),
             logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
             list_logging_function : Callable[[list[Any]], None] = LambdaCollection.list_logging_function(),
             sleeping_function : Callable[[int], None] = LambdaCollection.sleeping_function()
             ) -> None:
       
         self.__package_loader = package_loader
-        self.__release_manager = release_manager
+        self.__release_fetcher = release_fetcher
         self.__logging_function = logging_function
         self.__list_logging_function = list_logging_function
         self.__sleeping_function = sleeping_function
@@ -710,7 +710,7 @@ class StatusChecker():
         status_details : list[StatusDetail] = []
         for current_package in l_session.packages:
 
-            f_session : FSession = self.__release_manager.fetch(package_name = current_package.name)
+            f_session : FSession = self.__release_fetcher.fetch(package_name = current_package.name)
             
             status_detail : StatusDetail = self.__create_status_detail(
                 current_package = current_package, 
