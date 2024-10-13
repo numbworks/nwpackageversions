@@ -716,7 +716,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 		])
         self.get_function_mock : Callable[[str], Response] = Mock(return_value = self.xml_content)
 
-    def test_formaturl_shouldreturn_correcturl_when_packageprovided(self) -> None:
+    def test_formaturl_shouldreturncorrecturl_wheninvoked(self) -> None:
         
         # Arrange
         expected : str = "https://pypi.org/rss/project/pandas/releases.xml"
