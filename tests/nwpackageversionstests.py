@@ -830,12 +830,18 @@ class StatusCheckerTestCase(unittest.TestCase):
         self.package1 : Package = Package(name = "pandas", version = "2.2.3")
         self.release1 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
         self.expected_tpl1 : Tuple[bool, str] = (True, _MessageCollection.current_version_matches(self.package1, self.release1))
-        self.expected_sd1 : StatusDetail = StatusDetail(
+
+        self.l_session1 : LSession = LSession(
+            packages = [ self.package1 ],
+            unparsed_lines = []
+        )
+        self.status_detail1 : StatusDetail = StatusDetail(
             current_package = self.package1,
             most_recent_release = self.release1,
             is_version_matching = self.expected_tpl1[0],
             description = self.expected_tpl1[1]
         )
+        self.expected_sd1 : list[StatusDetail] = [ self.status_detail1 ]
 
         self.package2 : Package = Package(name = "pandas", version = "2.2.2")
         self.release2 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
@@ -859,18 +865,18 @@ class StatusCheckerTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(actual, self.expected_tpl2)
-    def test_createstatusdetail_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
+    def test_createstatusdetails_shouldreturnexpectedlistofstatusdetails_wheninvoked(self) -> None:
         
         # Arrange
         # Act
         status_checker : StatusChecker = StatusChecker()
-        actual : StatusDetail = status_checker._StatusChecker__create_status_detail(current_package = self.package1, most_recent_release = self.release1) # type: ignore
+        actual : list[StatusDetail] = status_checker._StatusChecker__create_status_details(l_session = self.l_session1, waiting_time = 0) # type: ignore
         
         # Assert
         self.assertTrue(
-            SupportMethodProvider.are_statusdetails_equal(
-                sd1 = actual,
-                sd2 = self.expected_sd1
+            SupportMethodProvider.are_lists_of_statusdetails_equal(
+                list1 = actual,
+                list2 = self.expected_sd1
             ))
 
 # Main
