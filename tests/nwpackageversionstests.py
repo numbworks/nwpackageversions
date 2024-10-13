@@ -878,6 +878,19 @@ class StatusCheckerTestCase(unittest.TestCase):
                 list1 = actual,
                 list2 = self.expected_sd1
             ))
+    def test_calculateprc_shouldreturnexpectedstring_wheninvoked(self) -> None:
+        
+        # Arrange
+        value : int = 5
+        total : int = 10
+        expected : str = "50.00%"
+        
+        # Act
+        status_checker : StatusChecker = StatusChecker()
+        actual : str = status_checker._StatusChecker__calculate_prc(value = value, total = total) # type: ignore
+        
+        # Assert
+        self.assertEqual(actual, expected)
 
 # Main
 if __name__ == "__main__":

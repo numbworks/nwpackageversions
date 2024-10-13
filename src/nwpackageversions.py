@@ -727,7 +727,7 @@ class StatusChecker():
             self.__sleeping_function(waiting_time)
         
         return status_details
-    def __calculate_prc(self, value: int, total : int) -> str:
+    def __calculate_prc(self, value : int, total : int) -> str:
 
         '''Calculates % out of provided value and total.'''
 
