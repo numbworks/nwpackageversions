@@ -727,6 +727,21 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(actual, expected)
+    
+    @parameterized.expand([
+        ["Fri, 20 Sep 2024 13:08:42 GMT", datetime(2024, 9, 20, 13, 8, 42)],
+        [None, None]
+    ])
+    def test_parsepubdatestr_shouldreturndatetimeornone_wheninvoked(self, pubdate_str : Optional[str], expected : Optional[datetime]) -> None:
+        
+        # Arrange      
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
+        actual : Optional[datetime] = release_fetcher._PyPiReleaseFetcher__parse_pubdate_str(pubdate_str) # type: ignore
+
+        # Assert
+        self.assertEqual(actual, expected)
+
 
 # Main
 if __name__ == "__main__":
