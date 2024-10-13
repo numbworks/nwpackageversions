@@ -165,8 +165,6 @@ class LambdaCollection():
 
         '''Adds a newline between each item of the provided lst before logging them.'''
 
-        # logging_function : Callable[[str], None] = LambdaCollection.logging_function()
-
         for item in lst:
             logging_function(str(item))
 
