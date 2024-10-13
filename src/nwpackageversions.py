@@ -819,7 +819,7 @@ class StatusChecker():
         '''Logs status_summary by using logging_function and list_logging_function.'''
 
         self.__logging_function(str(status_summary))
-        self.__list_logging_function(status_summary.details)
+        self.__list_logging_function(self.__logging_function, status_summary.details)
 
 # MAIN
 if __name__ == "__main__":
