@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, StatusDetail, StatusSummary, XMLItem, Release, FSession
+from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, PyPiReleaseFetcher, StatusDetail, StatusSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -689,6 +689,44 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
         with self.assertRaises(expected_exception = Exception, msg = msg):
             package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
             package_loader.load(file_path = file_path)
+class PyPiReleaseFetcherTestCase(unittest.TestCase):
+
+    def setUp(self) -> None:
+
+        self.xml_content : str = '\n'.join([
+			'<?xml version="1.0" encoding="UTF-8"?>',
+			'<rss version="2.0">',
+			'  <channel>',
+			'    <item>',
+			'      <title>2.2.3</title>',
+			'      <link>https://pypi.org/project/pandas/2.2.3/</link>',
+			'      <description>Powerful data structures for data analysis, time series, and statistics</description>',
+			'      <author>pandas-dev@python.org</author>',
+			'      <pubDate>Fri, 20 Sep 2024 13:08:42 GMT</pubDate>',
+			'    </item>',
+			'    <item>',
+			'      <title>2.2.2</title>',
+			'      <link>https://pypi.org/project/pandas/2.2.2/</link>',
+			'      <description>Powerful data structures for data analysis, time series, and statistics</description>',
+			'      <author>pandas-dev@python.org</author>',
+			'      <pubDate>Wed, 10 Apr 2024 19:44:10 GMT</pubDate>',
+			'    </item>',
+			'  </channel>',
+			'</rss>'
+		])
+        self.get_function_mock : Callable[[str], Response] = Mock(return_value = self.xml_content)
+
+    def test_formaturl_shouldreturn_correcturl_when_packageprovided(self) -> None:
+        
+        # Arrange
+        expected : str = "https://pypi.org/rss/project/pandas/releases.xml"
+
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
+        actual : str = release_fetcher._PyPiReleaseFetcher__format_url("pandas") # type: ignore
+        
+        # Assert
+        self.assertEqual(actual, expected)
 
 # Main
 if __name__ == "__main__":

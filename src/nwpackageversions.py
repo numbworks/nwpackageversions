@@ -107,7 +107,7 @@ class FSession():
                 f"'releases': '{len(self.releases)}', "
                 f"'xml_items': '{len(self.xml_items)}'"
                 " }"                
-            )   
+            )
 @dataclass(frozen = True)
 class StatusDetail():
 
