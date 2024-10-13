@@ -902,6 +902,75 @@ class StatusCheckerTestCase(unittest.TestCase):
         with self.assertRaises(expected_exception = Exception, msg = expected):
             status_checker : StatusChecker = StatusChecker()
             status_checker.check(file_path = file_path, waiting_time = waiting_time)
+    def test_check_shouldreturnexpectedstatussummaryandlogexpectedmessages_wheninvoked(self):
+        
+        # Arrange
+        packages : list[Package] = [
+            Package(name = "requests", version = "2.26.0"),
+            Package(name = "black", version = "22.12.0")
+        ]
+        l_session: LSession = LSession(packages = packages, unparsed_lines = [])
+
+        release1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2024, 1, 1))
+        release2 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 1, 2))      
+        f_session_1: FSession = FSession(package_name = "requests", most_recent_release = release1, releases = [ release1 ], xml_items = [])
+        f_session_2: FSession = FSession(package_name = "black", most_recent_release = release2, releases = [ release2 ], xml_items = [])
+
+        package_loader_mock : LocalPackageLoader = Mock()
+        package_loader_mock.load.return_value = l_session
+
+        release_fetcher_mock : PyPiReleaseFetcher = Mock()
+        release_fetcher_mock.fetch.side_effect = [ f_session_1, f_session_2 ]
+
+        messages: list[str] = []
+        logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
+
+        sleeping_function_mock : Callable[[int], None] = lambda x : None
+
+        file_path : str = r"C:/Dockerfile"
+        waiting_time : int = 5
+
+        expected : StatusSummary = StatusSummary(
+            total_packages = 2,
+            matching = 2,
+            matching_prc = "100.00%",
+            mismatching = 0,
+            mismatching_prc = "0.00%",
+            details = [ Mock(), Mock() ]
+        )
+
+        expected_messages: list[str] = [
+            _MessageCollection.status_checking_operation_started(),
+            _MessageCollection.list_local_packages_will_be_loaded(file_path),
+            _MessageCollection.waiting_time_will_be(waiting_time),
+            _MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages),
+            _MessageCollection.x_unparsed_lines(l_session.unparsed_lines),
+            _MessageCollection.starting_to_evaluate_status_local_package(),
+            _MessageCollection.status_evaluation_operation_successfully_loaded(),
+            _MessageCollection.starting_creation_status_summary(),
+            _MessageCollection.status_summary_successfully_created(),
+            str(expected),
+            _MessageCollection.status_checking_operation_completed()
+        ]        
+
+        # Act
+        status_checker : StatusChecker = StatusChecker(
+            package_loader = package_loader_mock,
+            release_fetcher = release_fetcher_mock,
+            logging_function = logging_function_mock,
+            list_logging_function = LambdaCollection.list_logging_function(),
+            sleeping_function = sleeping_function_mock
+
+        )
+        actual : StatusSummary = status_checker.check(file_path = file_path, waiting_time = waiting_time)
+
+        # Assert
+        self.assertEqual(actual.total_packages, expected.total_packages)
+        self.assertEqual(actual.matching, expected.matching)
+        self.assertEqual(actual.matching_prc, expected.matching_prc)        
+        self.assertEqual(actual.mismatching, expected.mismatching)
+        self.assertEqual(actual.mismatching_prc, expected.mismatching_prc)
+        self.assertEqual(messages, expected_messages)
 
 # Main
 if __name__ == "__main__":
