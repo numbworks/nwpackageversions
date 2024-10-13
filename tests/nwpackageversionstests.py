@@ -593,6 +593,23 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
         # Assert
         self.assertEqual(actual, expected)
 
+    @parameterized.expand([
+        [r"C:/Dockerfile", True],
+        [r"C:/Dockerfile_175621", True],
+        [r"C:/Dockerfile_demo", True],
+        [r"C:/some_file_name", False]
+    ])
+    def test_isdockerfile_shouldreturnexpectedbool_wheninvoked(self, file_path : str, expected : bool) -> None:
+        
+        # Arrange
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
+
+        # Act
+        actual : bool = package_loader._LocalPackageLoader__is_dockerfile(file_path) # type: ignore
+
+        # Assert
+        self.assertEqual(actual, expected)
+
 # Main
 if __name__ == "__main__":
     result = unittest.main(argv=[''], verbosity=3, exit=False)

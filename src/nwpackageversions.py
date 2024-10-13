@@ -295,7 +295,7 @@ class LocalPackageLoader():
         if file_path.endswith("requirements.txt"):
             return True
         
-        pattern : str = r'.*\\requirements_.+\.txt$'
+        pattern : str = r".*\\requirements_.+\.txt$"
         if re.match(pattern, file_path.replace("/", "\\")):
             return True
         
@@ -306,16 +306,16 @@ class LocalPackageLoader():
             Returns True if file_path contains a known file name for a Dockerfile file.
 
             Examples:
-                - "Dockerfile"
-                - "Dockerfile_175621"
-                - "Dockerfile_demo"
+                - r"C:/Dockerfile"
+                - r"C:/Dockerfile_175621"
+                - r"C:/Dockerfile_demo"
         '''
 
         if file_path.endswith("Dockerfile"):
             return True
         
-        pattern : str = r'^Dockerfile(_\w+)?$'
-        if re.match(pattern, file_path):
+        pattern : str = r".*\\Dockerfile(_.+)?$"
+        if re.match(pattern, file_path.replace("/", "\\")):
             return True
         
         return False
