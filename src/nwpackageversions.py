@@ -287,16 +287,16 @@ class LocalPackageLoader():
             Returns True if file_path contains a known file name for a requirements file.
 
             Examples:
-                - "requirements.txt"
-                - "requirements_175621.txt"
-                - "requirements_demo.txt"
+                - r"C:/requirements.txt"
+                - r"C:/requirements_175621.txt"
+                - r"C:/requirements_demo.txt"
         '''
 
         if file_path.endswith("requirements.txt"):
             return True
         
-        pattern : str = r"^requirements_.*\.txt$"
-        if re.match(pattern, file_path):
+        pattern : str = r'.*\\requirements_.+\.txt$'
+        if re.match(pattern, file_path.replace("/", "\\")):
             return True
         
         return False

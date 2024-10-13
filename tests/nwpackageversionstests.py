@@ -4,6 +4,7 @@ import sys
 from time import time
 import unittest
 from datetime import datetime
+from parameterized import parameterized
 from requests import Response
 from typing import Any, Optional, Callable, cast
 from unittest.mock import Mock, patch, mock_open, MagicMock
@@ -571,6 +572,23 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
 
         # Act
         actual : list[str] = package_loader._LocalPackageLoader__clean_unparsed_lines(unparsed_lines = unparsed_lines) # type: ignore
+
+        # Assert
+        self.assertEqual(actual, expected)
+    
+    @parameterized.expand([
+        [r"C:/requirements.txt", True],
+        [r"C:/requirements_175621.txt", True],
+        [r"C:/requirements_demo.txt", True],
+        [r"C:/some_file_name.txt", False]
+    ])
+    def test_isrequirements_shouldreturnexpectedbool_wheninvoked(self, file_path : str, expected : bool) -> None:
+        
+        # Arrange
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
+
+        # Act
+        actual : bool = package_loader._LocalPackageLoader__is_requirements(file_path) # type: ignore
 
         # Assert
         self.assertEqual(actual, expected)
