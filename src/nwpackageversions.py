@@ -161,11 +161,11 @@ class LambdaCollection():
 
         return content
     @staticmethod
-    def __log_list(lst : list[Any]) -> None: 
+    def __log_list(logging_function : Callable[[str], None], lst : list[Any]) -> None: 
 
         '''Adds a newline between each item of the provided lst before logging them.'''
 
-        logging_function : Callable[[str], None] = LambdaCollection.logging_function()
+        # logging_function : Callable[[str], None] = LambdaCollection.logging_function()
 
         for item in lst:
             logging_function(str(item))
@@ -183,12 +183,12 @@ class LambdaCollection():
 
         return lambda msg : print(msg)
     @staticmethod
-    def list_logging_function() -> Callable[[list[Any]], None]:
+    def list_logging_function() -> Callable[[Callable[[str], None], list[Any]], None]:
 
         '''
             An adapter around print() that adds a newline between each item of the provided lst before priting them.'''
 
-        return lambda lst : LambdaCollection.__log_list(lst)   
+        return lambda lf, lst : LambdaCollection.__log_list(lf, lst)
     @staticmethod
     def file_reader_function() -> Callable[[str], str]:
 
@@ -659,7 +659,7 @@ class StatusChecker():
     __package_loader : LocalPackageLoader
     __release_fetcher : PyPiReleaseFetcher
     __logging_function : Callable[[str], None]
-    __list_logging_function : Callable[[list[Any]], None]
+    __list_logging_function : Callable[[Callable[[str], None], list[Any]], None]
     __sleeping_function : Callable[[int], None]
 
     def __init__(
@@ -667,7 +667,7 @@ class StatusChecker():
             package_loader : LocalPackageLoader = LocalPackageLoader(),
             release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(),
             logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
-            list_logging_function : Callable[[list[Any]], None] = LambdaCollection.list_logging_function(),
+            list_logging_function : Callable[[Callable[[str], None], list[Any]], None] = LambdaCollection.list_logging_function(),
             sleeping_function : Callable[[int], None] = LambdaCollection.sleeping_function()
             ) -> None:
       
@@ -790,7 +790,7 @@ class StatusChecker():
         status_details : list[StatusDetail] = self.__create_status_details(l_session = l_session, waiting_time = waiting_time)
 
         self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
-        self.__list_logging_function(status_details)
+        self.__list_logging_function(self.__logging_function, status_details)
         self.__logging_function(_MessageCollection.starting_creation_status_summary())
 
         status_summary : StatusSummary = self.__create_status_summary(status_details = status_details)

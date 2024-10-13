@@ -402,14 +402,14 @@ class LambdaCollectionTestCase(unittest.TestCase):
         # Arrange
         lst : list[Any] = [1, 2, 3]
         messages : list[str] = []
+        logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
 
-        # Act, Assert
-        with patch('nwpackageversions.LambdaCollection.logging_function', return_value = lambda msg : messages.append(msg)):
-
-            logging_function : Callable[[list[Any]], None] = LambdaCollection.list_logging_function()
-            logging_function(lst)
-           
-            self.assertEqual(messages, ["1", "2", "3"])
+        # Act, 
+        list_logging_function : Callable[[Callable[[str], None], list[Any]], None] = LambdaCollection.list_logging_function()
+        list_logging_function(logging_function_mock, lst)
+        
+        # Assert
+        self.assertEqual(messages, ["1", "2", "3"])
 class LSessionTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -924,19 +924,25 @@ class StatusCheckerTestCase(unittest.TestCase):
 
         messages: list[str] = []
         logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
-
         sleeping_function_mock : Callable[[int], None] = lambda x : None
 
         file_path : str = r"C:/Dockerfile"
         waiting_time : int = 5
 
+        descriptions : list[str] = [
+            "{ 'description': 'The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01').' }",
+            "{ 'description': 'The current version ('22.12.0') of 'black' matches with the most recent release ('22.12.0', '2024-01-02').' }"
+        ]
         expected : StatusSummary = StatusSummary(
             total_packages = 2,
             matching = 2,
             matching_prc = "100.00%",
             mismatching = 0,
             mismatching_prc = "0.00%",
-            details = [ Mock(), Mock() ]
+            details = [ 
+                Mock(description = descriptions[0]), 
+                Mock(description = descriptions[1])
+            ]
         )
 
         expected_messages: list[str] = [
@@ -947,6 +953,8 @@ class StatusCheckerTestCase(unittest.TestCase):
             _MessageCollection.x_unparsed_lines(l_session.unparsed_lines),
             _MessageCollection.starting_to_evaluate_status_local_package(),
             _MessageCollection.status_evaluation_operation_successfully_loaded(),
+            descriptions[0],
+            descriptions[1],
             _MessageCollection.starting_creation_status_summary(),
             _MessageCollection.status_summary_successfully_created(),
             str(expected),
