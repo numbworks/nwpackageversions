@@ -828,7 +828,7 @@ class StatusCheckerTestCase(unittest.TestCase):
     def setUp(self) -> None:
 
         pass
-        
+  
     def test_statuschecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
         
         # Arrange
@@ -842,7 +842,19 @@ class StatusCheckerTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(actual, expected)
+    def test_statuschecker_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
+        
+        # Arrange
+        package : Package = Package(name = "pandas", version = "2.2.2")
+        release : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
+        expected : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(package, release))
 
+        # Act
+        status_checker : StatusChecker = StatusChecker()
+        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = package, most_recent_release = release) # type: ignore
+        
+        # Assert
+        self.assertEqual(actual, expected)
 
 # Main
 if __name__ == "__main__":
