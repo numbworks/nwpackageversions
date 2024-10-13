@@ -617,7 +617,7 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
         # Assert
         self.assertEqual(actual, expected)
 
-    def test_loadfromrequirements_shouldreturnexpectedlsession_wheninvoked(self) -> None:
+    def test_load_shouldreturnexpectedlsession_whenrequirements(self) -> None:
         
         # Arrange
         file_path : str = "requirements.txt"
@@ -639,7 +639,7 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
 
         # Act
         package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = file_reader_mock)
-        actual : LSession = package_loader._LocalPackageLoader__load_from_requirements(file_path = file_path) # type: ignore
+        actual : LSession = package_loader.load(file_path = file_path)
 
         # Assert
         self.assertTrue(
@@ -647,7 +647,7 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
                 ls1 = actual,
                 ls2 = expected
             ))
-    def test_loadfromdockerfile_shouldreturnexpectedlsession_wheninvoked(self) -> None:
+    def test_load_shouldreturnexpectedlsession_whendockerfile(self) -> None:
         
         # Arrange
         file_path : str = "Dockerfile"
@@ -669,7 +669,7 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
 
         # Act
         package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = file_reader_mock)
-        actual : LSession = package_loader._LocalPackageLoader__load_from_dockerfile(file_path = file_path) # type: ignore
+        actual : LSession = package_loader.load(file_path = file_path)
 
         # Assert
         self.assertTrue(
