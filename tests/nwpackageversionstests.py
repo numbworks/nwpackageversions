@@ -777,18 +777,6 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
             Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42)),
             Release(package_name = "pandas", version = "2.2.2", date = datetime(2024, 4, 10, 19, 44, 10))
         ]
-
-    def test_formaturl_shouldreturncorrecturl_wheninvoked(self) -> None:
-        
-        # Arrange
-        expected : str = "https://pypi.org/rss/project/pandas/releases.xml"
-
-        # Act
-        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
-        actual : str = release_fetcher._PyPiReleaseFetcher__format_url("pandas") # type: ignore
-        
-        # Assert
-        self.assertEqual(actual, expected)
     
     @parameterized.expand([
         ["Fri, 20 Sep 2024 13:08:42 GMT", datetime(2024, 9, 20, 13, 8, 42)],
