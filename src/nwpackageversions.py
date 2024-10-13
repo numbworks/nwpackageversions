@@ -281,8 +281,45 @@ class LocalPackageManager():
         unparsed_lines = [line for line in unparsed_lines if line]
 
         return unparsed_lines
+    def __is_requirements(self, file_path : str) -> bool:
 
-    def load_from_requirements(self, file_path : str) -> LSession:
+        '''
+            Returns True if file_path contains a known file name for a requirements file.
+
+            Examples:
+                - "requirements.txt"
+                - "requirements_175621.txt"
+                - "requirements_demo.txt"
+        '''
+
+        if file_path.endswith("requirements.txt"):
+            return True
+        
+        pattern : str = r"^requirements_.*\.txt$"
+        if re.match(pattern, file_path):
+            return True
+        
+        return False
+    def __is_dockerfile(self, file_path : str) -> bool:
+
+        '''
+            Returns True if file_path contains a known file name for a Dockerfile file.
+
+            Examples:
+                - "Dockerfile"
+                - "Dockerfile_175621"
+                - "Dockerfile_demo"
+        '''
+
+        if file_path.endswith("Dockerfile"):
+            return True
+        
+        pattern : str = r'^Dockerfile(_\w+)?$'
+        if re.match(pattern, file_path):
+            return True
+        
+        return False
+    def __load_from_requirements(self, file_path : str) -> LSession:
 
         '''
             Expects a file_path to a "requirements.txt" file that looks like the following:
@@ -337,7 +374,7 @@ class LocalPackageManager():
         )
 
         return l_session
-    def load_from_dockerfile(self, file_path : str) -> LSession:
+    def __load_from_dockerfile(self, file_path : str) -> LSession:
 
         '''
             Expects a file_path to a "Dockerfile" file that looks like the following:
@@ -385,16 +422,17 @@ class LocalPackageManager():
         )
 
         return l_session
+
     def load(self, file_path : str) -> LSession:
 
         '''It supports two files: "requirements.txt" and "Dockerfile"'''
 
         l_session : Optional[LSession] = None
 
-        if file_path.endswith("requirements.txt"):
-            l_session = self.load_from_requirements(file_path = file_path)
-        elif file_path.endswith("Dockerfile"):
-            l_session = self.load_from_dockerfile(file_path = file_path)
+        if self.__is_requirements(file_path = file_path):
+            l_session = self.__load_from_requirements(file_path = file_path)
+        elif self.__is_dockerfile(file_path = file_path):
+            l_session = self.__load_from_dockerfile(file_path = file_path)
         else:
             raise Exception(_MessageCollection.no_loading_strategy_found(file_path))
         
