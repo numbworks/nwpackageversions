@@ -447,7 +447,7 @@ class LocalPackageLoader():
         else:
             raise Exception(_MessageCollection.no_loading_strategy_found(file_path))
         
-        if l_session.packages == 0:
+        if len(l_session.packages) == 0:
             raise Exception(_MessageCollection.zero_packages_found(file_path))
 
         return cast(LSession, l_session)

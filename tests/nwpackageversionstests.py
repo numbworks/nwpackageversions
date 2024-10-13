@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import LSession, LambdaCollection, LocalPackageLoader, Package, StatusDetail, StatusSummary, XMLItem, Release, FSession
+from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, StatusDetail, StatusSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -677,13 +677,16 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
                 ls1 = actual,
                 ls2 = expected
             ))
-    def test_load_shouldraiseexception_whennotsupportedfilenameprovided(self) -> None:
+    
+    @parameterized.expand([
+        [r"C:/randomfile.txt", _MessageCollection.no_loading_strategy_found(r"C:/randomfile.txt")],
+        [r"C:/Dockerfile", _MessageCollection.zero_packages_found(r"C:/Dockerfile")]
+    ])    
+    def test_load_shouldraiseexceptionandexpectedmessage_whenunexpected(self, file_path : str, msg : str) -> None:
         
         # Arrange
-        file_path : str = "randomfile.txt"
-
         # Act, Assert
-        with self.assertRaises(Exception):
+        with self.assertRaises(expected_exception = Exception, msg = msg):
             package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
             package_loader.load(file_path = file_path)
 
