@@ -10,7 +10,7 @@ from unittest.mock import patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import LSession, LambdaCollection, Package, StatusDetail, StatusSummary, XMLItem, Release, FSession
+from nwpackageversions import LSession, LambdaCollection, LocalPackageLoader, Package, StatusDetail, StatusSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -546,6 +546,18 @@ class StatusSummaryTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, self.expected) 
+class LocalPackageLoaderTestCase(unittest.TestCase):
+
+    def test_localpackageloader_shouldinitializeasexpected_wheninvoked(self) -> None:
+        
+        # Arrange
+        file_reader_function: Callable[[str], str] = LambdaCollection.file_reader_function()
+
+        # Act
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = file_reader_function)
+
+        # Assert
+        self.assertIsInstance(package_loader, LocalPackageLoader)
 
 # Main
 if __name__ == "__main__":
