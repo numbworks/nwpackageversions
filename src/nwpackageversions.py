@@ -261,7 +261,7 @@ class _MessageCollection():
         return "The status checking operation has been completed."       
 
 # CLASSES
-class LocalPackageManager():
+class LocalPackageLoader():
 
     '''This class collects all the logic related to local package management.'''
 
@@ -650,7 +650,7 @@ class StatusChecker():
 
     '''This class collects all the logic related to package status checking.'''
 
-    __package_manager : LocalPackageManager
+    __package_loader : LocalPackageLoader
     __release_manager : PyPiReleaseManager
     __logging_function : Callable[[str], None]
     __list_logging_function : Callable[[list[Any]], None]
@@ -658,14 +658,14 @@ class StatusChecker():
 
     def __init__(
             self, 
-            package_manager : LocalPackageManager = LocalPackageManager(),
+            package_loader : LocalPackageLoader = LocalPackageLoader(),
             release_manager : PyPiReleaseManager = PyPiReleaseManager(),
             logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
             list_logging_function : Callable[[list[Any]], None] = LambdaCollection.list_logging_function(),
             sleeping_function : Callable[[int], None] = LambdaCollection.sleeping_function()
             ) -> None:
       
-        self.__package_manager = package_manager
+        self.__package_loader = package_loader
         self.__release_manager = release_manager
         self.__logging_function = logging_function
         self.__list_logging_function = list_logging_function
@@ -775,7 +775,7 @@ class StatusChecker():
         self.__logging_function(_MessageCollection.list_local_packages_will_be_loaded(file_path))
         self.__logging_function(_MessageCollection.waiting_time_will_be(waiting_time))
 
-        l_session : LSession = self.__package_manager.load(file_path = file_path)
+        l_session : LSession = self.__package_loader.load(file_path = file_path)
 
         self.__logging_function(_MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages))
         self.__logging_function(_MessageCollection.x_unparsed_lines(l_session.unparsed_lines))
