@@ -425,7 +425,18 @@ class LocalPackageLoader():
 
     def load(self, file_path : str) -> LSession:
 
-        '''It supports two files: "requirements.txt" and "Dockerfile"'''
+        '''
+            It loads information about local packages from "requirements.txt" and "Dockerfile" files.
+
+            Examples:
+
+                - r"C:/requirements.txt"
+                - r"C:/requirements_175621.txt"
+                - r"C:/requirements_demo.txt"            
+                - r"C:/Dockerfile"
+                - r"C:/Dockerfile_175621"
+                - r"C:/Dockerfile_demo"        
+        '''
 
         l_session : Optional[LSession] = None
 
