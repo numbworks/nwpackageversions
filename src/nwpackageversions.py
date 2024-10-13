@@ -209,8 +209,8 @@ class _MessageCollection():
     def no_loading_strategy_found(file_path : str) -> str:
         return f"No loading strategy found for the provided file name. ('file_path': '{file_path}', 'supported_file_names' : [ 'requirements.txt', 'Dockerfile' ])"
     @staticmethod
-    def zero_packages_found(file_path : str) -> str:
-        return f"Zero packages found in '{file_path}'. Please open the documentation to check the expected layout of the supported files."
+    def no_packages_found(file_path : str) -> str:
+        return f"No packages found in '{file_path}'. Please open the documentation to check the expected layout of the supported files."
     
     @staticmethod
     def waiting_time_cant_be_less_than(waiting_time : int, expected : int) -> str:
@@ -259,6 +259,10 @@ class _MessageCollection():
     @staticmethod
     def status_checking_operation_completed() -> str:
         return "The status checking operation has been completed."       
+
+    @staticmethod
+    def no_suitable_xml_items_found(url : str) -> str:
+        return f"No suitable XML items found in '{url}'. The application is not able to establish the most recent release."
 
 # CLASSES
 class LocalPackageLoader():
@@ -448,7 +452,7 @@ class LocalPackageLoader():
             raise Exception(_MessageCollection.no_loading_strategy_found(file_path))
         
         if len(l_session.packages) == 0:
-            raise Exception(_MessageCollection.zero_packages_found(file_path))
+            raise Exception(_MessageCollection.no_packages_found(file_path))
 
         return cast(LSession, l_session)
 class PyPiReleaseFetcher():
@@ -560,27 +564,19 @@ class PyPiReleaseFetcher():
         return releases
     def __has_title(self, xml_item : XMLItem) -> bool:
 
-        '''Retuns True if pypi_item.title is not None.'''
+        '''Retuns False if xml_item.title is None.'''
 
-        try:
-
-            cast(str, xml_item.title)
-
+        if xml_item.title:
             return True
-
-        except:
+        else:
             return False
     def __has_pubdate(self, xml_item : XMLItem) -> bool:
 
-        '''Retuns True if pypi_item.pubdate is not None.'''
+        '''Retuns False if xml_item.pubdate is None.'''
 
-        try:
-
-            cast(datetime, xml_item.pubdate)
-
+        if xml_item.pubdate:
             return True
-
-        except:
+        else:
             return False
     def __filter(self, items : list[Any], function : Callable[[Any], bool]) -> list[Any]:
 
@@ -630,13 +626,9 @@ class PyPiReleaseFetcher():
 
         return most_recent_release
 
-    @lru_cache(maxsize = 16)
     def fetch(self, package_name : str) -> FSession:
 
-        '''
-            Retrieves all the releases from PyPi.org. 
-            A "@lru_cache" with "maxsize = 16" is enabled on this method.
-        '''
+        '''Retrieves all the releases from PyPi.org for the provided package_name.'''
 
         url : str =  self.__format_url(package_name = package_name)
         response : Response = self.__get_function(url)
@@ -646,6 +638,9 @@ class PyPiReleaseFetcher():
         xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_title(xml_item = x))
         xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_pubdate(xml_item = x))
         
+        if len(xml_items_clean) == 0:
+            raise Exception(_MessageCollection.no_suitable_xml_items_found(url = url))
+
         releases : list[Release] = self.__convert_to_releases(package_name = package_name, xml_items = xml_items_clean)
         releases = self.__sort_by_date(releases = releases)
 

@@ -716,7 +716,7 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
     
     @parameterized.expand([
         [r"C:/randomfile.txt", _MessageCollection.no_loading_strategy_found(r"C:/randomfile.txt")],
-        [r"C:/Dockerfile", _MessageCollection.zero_packages_found(r"C:/Dockerfile")]
+        [r"C:/Dockerfile", _MessageCollection.no_packages_found(r"C:/Dockerfile")]
     ])    
     def test_load_shouldraiseexceptionandexpectedmessage_whenunexpected(self, file_path : str, msg : str) -> None:
         
@@ -791,6 +791,21 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
+    def test_fetch_shouldraiseexception_whenxmlitemsarezero(self) -> None:
+        
+        # Arrange
+        xml_content : str = self.xml_content.replace("<title>2.2.3</title>", "<title></title>")
+        xml_content = xml_content.replace("<pubDate>Wed, 10 Apr 2024 19:44:10 GMT</pubDate>", "")       
+        xml_response : Response = Mock()
+        xml_response.text = xml_content
+
+        get_function_mock : Callable[[str], Response] = Mock(return_value = xml_response)
+        msg : str = _MessageCollection.no_suitable_xml_items_found(url = "https://pypi.org/rss/project/pandas/releases.xml")
+
+        # Act, Assert
+        with self.assertRaises(expected_exception = Exception, msg = msg):
+            release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = get_function_mock)
+            actual : FSession = release_fetcher.fetch(package_name = "pandas")
     def test_fetch_shouldreturnexpectedfsession_wheninvoked(self) -> None:
         
         # Arrange
