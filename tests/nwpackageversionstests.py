@@ -791,6 +791,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
+    
     def test_fetch_shouldraiseexception_whenxmlitemsarezero(self) -> None:
         
         # Arrange
@@ -805,7 +806,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         # Act, Assert
         with self.assertRaises(expected_exception = Exception, msg = msg):
             release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = get_function_mock)
-            actual : FSession = release_fetcher.fetch(package_name = "pandas")
+            release_fetcher.fetch(package_name = "pandas")
     def test_fetch_shouldreturnexpectedfsession_wheninvoked(self) -> None:
         
         # Arrange
