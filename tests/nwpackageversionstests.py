@@ -4,6 +4,7 @@ import sys
 from time import time
 import unittest
 from datetime import datetime
+from xml.etree.ElementTree import Element
 from parameterized import parameterized
 from requests import Response
 from typing import Any, Optional, Callable, cast
@@ -98,7 +99,31 @@ class SupportMethodProvider():
         return SupportMethodProvider.__are_lists_equal(
                 list1 = list1, 
                 list2 = list2, 
-                comparer = lambda p1,p2 : SupportMethodProvider.are_statusdetails_equal(p1, p2)
+                comparer = lambda sd1, sd2 : SupportMethodProvider.are_statusdetails_equal(sd1, sd2)
+            )
+
+    @staticmethod
+    def are_xmlitems_equal(xi1 : XMLItem, sxi2 : XMLItem) -> bool:
+
+        '''Returns True if all the fields of the two objects contain the same values.'''
+
+        return (
+            xi1.title == sxi2.title and
+            xi1.link == sxi2.link and
+            xi1.description == sxi2.description and
+            xi1.author == sxi2.author and
+            xi1.pubdate == sxi2.pubdate and
+            xi1.pubdate_str == sxi2.pubdate_str
+            )
+    @staticmethod
+    def are_lists_of_xmlitems_equal(list1 : list[XMLItem], list2 : list[XMLItem]) -> bool:
+
+        '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
+
+        return SupportMethodProvider.__are_lists_equal(
+                list1 = list1, 
+                list2 = list2, 
+                comparer = lambda xi1, xi2 : SupportMethodProvider.are_xmlitems_equal(xi1, xi2)
             )
 
     @staticmethod
@@ -109,6 +134,17 @@ class SupportMethodProvider():
         return (
             SupportMethodProvider.are_lists_of_packages_equal(ls1.packages, ls2.packages) and
             ls1.unparsed_lines == ls2.unparsed_lines
+            )
+    @staticmethod
+    def are_fsessions_equal(fs1 : FSession, fs2 : FSession) -> bool:
+
+        '''Returns True if all the fields of the two objects contain the same values.'''
+
+        return (
+            fs1.package_name == fs2.package_name and
+            SupportMethodProvider.are_releases_equal(fs1.most_recent_release, fs2.most_recent_release) and
+            SupportMethodProvider.are_lists_of_releases_equal(fs1.releases, fs2.releases) and
+            SupportMethodProvider.are_lists_of_xmlitems_equal(fs1.xml_items, fs2.xml_items)
             )
 
 # TEST CLASSES
@@ -714,7 +750,33 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 			'  </channel>',
 			'</rss>'
 		])
-        self.get_function_mock : Callable[[str], Response] = Mock(return_value = self.xml_content)
+        
+        self.xml_response : Response = Mock()
+        self.xml_response.text = self.xml_content
+        self.get_function_mock : Callable[[str], Response] = Mock(return_value = self.xml_response)
+
+        self.xml_items : list[XMLItem] = [
+            XMLItem(
+                title = "2.2.3", 
+                link = "https://pypi.org/project/pandas/2.2.3/", 
+                description = "Powerful data structures for data analysis, time series, and statistics",
+                author = "pandas-dev@python.org",
+                pubdate = datetime(2024, 9, 20, 13, 8, 42),
+                pubdate_str = "Fri, 20 Sep 2024 13:08:42 GMT"
+                ),
+            XMLItem(
+                title = "2.2.2", 
+                link = "https://pypi.org/project/pandas/2.2.2/", 
+                description = "Powerful data structures for data analysis, time series, and statistics",
+                author = "pandas-dev@python.org",
+                pubdate = datetime(2024, 4, 10, 19, 44, 10),
+                pubdate_str = "Wed, 10 Apr 2024 19:44:10 GMT"
+                ),
+        ]
+        self.releases : list[Release] = [
+            Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42)),
+            Release(package_name = "pandas", version = "2.2.2", date = datetime(2024, 4, 10, 19, 44, 10))
+        ]
 
     def test_formaturl_shouldreturncorrecturl_wheninvoked(self) -> None:
         
@@ -741,7 +803,22 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
+    def test_fetch_shouldreturnexpectedfsession_wheninvoked(self) -> None:
+        
+        # Arrange
+        expected : FSession = FSession(
+            package_name = "pandas",
+            most_recent_release = self.releases[0],
+            releases = self.releases,
+            xml_items = self.xml_items
+        )
+        
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
+        actual : FSession = release_fetcher.fetch(package_name = "pandas")
 
+        # Assert
+        self.assertEqual(actual, expected)
 
 # Main
 if __name__ == "__main__":
