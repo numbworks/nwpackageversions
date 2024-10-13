@@ -101,6 +101,16 @@ class SupportMethodProvider():
                 comparer = lambda p1,p2 : SupportMethodProvider.are_statusdetails_equal(p1, p2)
             )
 
+    @staticmethod
+    def are_lsessions_equal(ls1 : LSession, ls2 : LSession) -> bool:
+
+        '''Returns True if all the fields of the two objects contain the same values.'''
+
+        return (
+            SupportMethodProvider.are_lists_of_packages_equal(ls1.packages, ls2.packages) and
+            ls1.unparsed_lines == ls2.unparsed_lines
+            )
+
 # TEST CLASSES
 class XMLItemTestCase(unittest.TestCase):
 
@@ -609,6 +619,37 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
+
+    def test_loadfromrequirements_shouldreturnexpectedlsession_wheninvoked(self) -> None:
+        
+        # Arrange
+        file_path : str = "requirements.txt"
+        file_content: str = "\n".join([
+            "requests >= 2.26.0", 
+            "asyncio == 3.4.3", 
+            "Some unparsable line.", 
+            ""
+        ])
+        file_reader_mock : Callable[[str], str] = Mock(return_value = file_content)
+        expected : LSession = LSession(
+            packages = [
+                Package(name = "requests", version = "2.26.0"),
+                Package(name = "asyncio", version = "3.4.3")
+            ],
+            unparsed_lines = ["Some unparsable line."]
+
+        )
+
+        # Act
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = file_reader_mock)
+        actual : LSession = package_loader._LocalPackageLoader__load_from_requirements(file_path = file_path) # type: ignore
+
+        # Assert
+        self.assertTrue(
+            SupportMethodProvider.are_lsessions_equal(
+                ls1 = actual,
+                ls2 = expected
+            ))
 
 # Main
 if __name__ == "__main__":
