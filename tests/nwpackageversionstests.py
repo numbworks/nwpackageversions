@@ -6,7 +6,7 @@ import unittest
 from datetime import datetime
 from requests import Response
 from typing import Any, Optional, Callable, cast
-from unittest.mock import patch, mock_open, MagicMock
+from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
@@ -548,6 +548,10 @@ class StatusSummaryTestCase(unittest.TestCase):
         self.assertEqual(actual, self.expected) 
 class LocalPackageLoaderTestCase(unittest.TestCase):
 
+    def setUp(self) -> None:
+
+        self.file_reader_mock: Callable[[str], str] = Mock(return_value = "content")
+
     def test_localpackageloader_shouldinitializeasexpected_wheninvoked(self) -> None:
         
         # Arrange
@@ -558,6 +562,18 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
 
         # Assert
         self.assertIsInstance(package_loader, LocalPackageLoader)
+    def test_cleanunparsedlines_shouldremovermptystrings_whenlinesprovided(self) -> None:
+        
+        # Arrange
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = self.file_reader_mock)
+        unparsed_lines : list[str] = ["line1", "", "line2", ""]
+        expected : list[str] = ["line1", "line2"]
+
+        # Act
+        actual : list[str] = package_loader._LocalPackageLoader__clean_unparsed_lines(unparsed_lines = unparsed_lines) # type: ignore
+
+        # Assert
+        self.assertEqual(actual, expected)
 
 # Main
 if __name__ == "__main__":
