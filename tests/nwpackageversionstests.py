@@ -650,6 +650,36 @@ class LocalPackageLoaderTestCase(unittest.TestCase):
                 ls1 = actual,
                 ls2 = expected
             ))
+    def test_loadfromdockerfile_shouldreturnexpectedlsession_wheninvoked(self) -> None:
+        
+        # Arrange
+        file_path : str = "Dockerfile"
+        file_content: str = "\n".join([
+            "FROM python:3.12.5-bookworm", 
+            "RUN pip install requests==2.26.0", 
+            "RUN pip install beautifulsoup4==4.10.0", 
+            ""
+        ])
+        file_reader_mock : Callable[[str], str] = Mock(return_value = file_content)
+        expected : LSession = LSession(
+            packages = [
+                Package(name = "requests", version = "2.26.0"),
+                Package(name = "beautifulsoup4", version = "4.10.0")
+            ],
+            unparsed_lines = ["FROM python:3.12.5-bookworm"]
+
+        )
+
+        # Act
+        package_loader : LocalPackageLoader = LocalPackageLoader(file_reader_function = file_reader_mock)
+        actual : LSession = package_loader._LocalPackageLoader__load_from_dockerfile(file_path = file_path) # type: ignore
+
+        # Assert
+        self.assertTrue(
+            SupportMethodProvider.are_lsessions_equal(
+                ls1 = actual,
+                ls2 = expected
+            ))
 
 # Main
 if __name__ == "__main__":
