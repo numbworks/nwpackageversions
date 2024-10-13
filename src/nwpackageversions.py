@@ -263,7 +263,7 @@ class _MessageCollection():
 # CLASSES
 class LocalPackageLoader():
 
-    '''This class collects all the logic related to local package management.'''
+    '''This class collects all the logic related to load information about local packages.'''
 
     __file_reader_function : Callable[[str], str]
 
