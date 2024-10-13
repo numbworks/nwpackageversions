@@ -1,6 +1,7 @@
 # GLOBAL MODULES
 import os
 import sys
+from time import time
 import unittest
 from datetime import datetime
 from requests import Response
@@ -335,6 +336,33 @@ class LambdaCollectionTestCase(unittest.TestCase):
         # Assert
         open_mock.assert_called_once_with(file_path, "r", encoding = "utf-8")
         self.assertEqual(str(actual), expected)
+    def test_sleepingfunction_shoulddelayexecutionbywaitingtime_wheninvoked(self):
+	
+        # Arrange
+        waiting_time : int = 2
+        sleeping_function : Callable[[int], None] = LambdaCollection.sleeping_function()
+        
+        # Act
+        start_time : float = time()
+        sleeping_function(waiting_time)
+        end_time : float = time()
+        
+        # Assert
+        elapsed_time : float = end_time - start_time
+        self.assertAlmostEqual(elapsed_time, waiting_time, delta=0.1)
+    def test_listloggingfunction_shouldlogitemsasexpected_whenlistisprovided(self) -> None:
+        
+        # Arrange
+        lst : list[Any] = [1, 2, 3]
+        messages : list[str] = []
+
+        # Act, Assert
+        with patch('nwpackageversions.LambdaCollection.logging_function', return_value = lambda msg : messages.append(msg)):
+
+            logging_function : Callable[[list[Any]], None] = LambdaCollection.list_logging_function()
+            logging_function(lst)
+           
+            self.assertEqual(messages, ["1", "2", "3"])
 class LSessionTestCase(unittest.TestCase):
 
     def setUp(self):
