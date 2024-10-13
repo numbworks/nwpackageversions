@@ -7,12 +7,12 @@ from datetime import datetime
 from xml.etree.ElementTree import Element
 from parameterized import parameterized
 from requests import Response
-from typing import Any, Optional, Callable, cast
+from typing import Any, Optional, Callable, Tuple, cast
 from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, PyPiReleaseFetcher, StatusDetail, StatusSummary, XMLItem, Release, FSession
+from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, PyPiReleaseFetcher, StatusChecker, StatusDetail, StatusSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -823,6 +823,26 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
+class StatusCheckerTestCase(unittest.TestCase):
+
+    def setUp(self) -> None:
+
+        pass
+        
+    def test_statuschecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
+        
+        # Arrange
+        package : Package = Package(name = "pandas", version = "2.2.3")
+        release : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
+        expected : Tuple[bool, str] = (True, _MessageCollection.current_version_matches(package, release))
+
+        # Act
+        status_checker : StatusChecker = StatusChecker()
+        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = package, most_recent_release = release) # type: ignore
+        
+        # Assert
+        self.assertEqual(actual, expected)
+
 
 # Main
 if __name__ == "__main__":
