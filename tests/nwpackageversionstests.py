@@ -1,11 +1,11 @@
 # GLOBAL MODULES
 import os
 import sys
-from time import time
 import unittest
 from datetime import datetime
 from parameterized import parameterized
 from requests import Response
+from time import time
 from typing import Any, Optional, Callable, Tuple, cast
 from unittest.mock import Mock, patch, mock_open, MagicMock
 
