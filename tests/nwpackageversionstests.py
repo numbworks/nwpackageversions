@@ -4,7 +4,6 @@ import sys
 from time import time
 import unittest
 from datetime import datetime
-from xml.etree.ElementTree import Element
 from parameterized import parameterized
 from requests import Response
 from typing import Any, Optional, Callable, Tuple, cast
@@ -12,7 +11,8 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, PyPiReleaseFetcher, StatusChecker, StatusDetail, StatusSummary, XMLItem, Release, FSession
+from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package
+from nwpackageversions import PyPiReleaseFetcher, StatusChecker, StatusDetail, StatusSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
