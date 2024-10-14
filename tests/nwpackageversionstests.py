@@ -979,6 +979,32 @@ class StatusCheckerTestCase(unittest.TestCase):
         self.assertEqual(actual.mismatching, expected.mismatching)
         self.assertEqual(actual.mismatching_prc, expected.mismatching_prc)
         self.assertEqual(messages, expected_messages)
+    def test_trycheck_shouldreturnnoneandlogexpectedmessage_whenraisedexception(self):
+        
+        # Arrange
+        file_path : str = r"C:/Dockerfile"
+        waiting_time : int = 2
+        minimum_wt : int = 5
+        expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
+
+        messages: list[str] = []
+        logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
+
+        # Act
+        status_checker : StatusChecker = StatusChecker(
+            package_loader = LocalPackageLoader(),
+            release_fetcher = PyPiReleaseFetcher(),
+            logging_function = logging_function_mock,
+            list_logging_function = LambdaCollection.list_logging_function(),
+            sleeping_function = LambdaCollection.sleeping_function()
+
+        )
+        status_summary : Optional[StatusSummary] = status_checker.try_check(file_path = file_path, waiting_time = waiting_time)
+        
+        # Assert
+        self.assertIsNone(status_summary)
+        self.assertEqual(messages[0], expected)
+
 
 # Main
 if __name__ == "__main__":
