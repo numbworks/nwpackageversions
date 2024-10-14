@@ -1004,7 +1004,57 @@ class StatusCheckerTestCase(unittest.TestCase):
         # Assert
         self.assertIsNone(status_summary)
         self.assertEqual(messages[0], expected)
+    def test_logstatussummary_shouldlogexpectedmessages_wheninvoked(self):
 
+        # Arrange
+        messages: list[str] = []
+        logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
+
+        descriptions : list[str] = [
+            "{ 'description': 'The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01').' }",
+            "{ 'description': 'The current version ('22.12.0') of 'black' matches with the most recent release ('22.12.0', '2024-01-02').' }"
+        ]
+        status_summary : StatusSummary = StatusSummary(
+            total_packages = 2,
+            matching = 2,
+            matching_prc = "100.00%",
+            mismatching = 0,
+            mismatching_prc = "0.00%",
+            details = [ 
+                StatusDetail(
+                    current_package = Mock(), 
+                    most_recent_release = Mock(), 
+                    is_version_matching = True, 
+                    description = "The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01')."
+                ),
+                StatusDetail(
+                    current_package = Mock(), 
+                    most_recent_release = Mock(), 
+                    is_version_matching = True, 
+                    description = "The current version ('22.12.0') of 'black' matches with the most recent release ('22.12.0', '2024-01-02')."
+                )
+            ]
+        )
+
+        expected: list[str] = [
+            str(status_summary),
+            descriptions[0],
+            descriptions[1]            
+        ]
+
+        # Act
+        status_checker : StatusChecker = StatusChecker(
+            package_loader = LocalPackageLoader(),
+            release_fetcher = PyPiReleaseFetcher(),
+            logging_function = logging_function_mock,
+            list_logging_function = LambdaCollection.list_logging_function(),
+            sleeping_function = LambdaCollection.sleeping_function()
+
+        )
+        status_checker.log_status_summary(status_summary = status_summary)
+
+        # Assert
+        self.assertEqual(messages, expected)
 
 # Main
 if __name__ == "__main__":
