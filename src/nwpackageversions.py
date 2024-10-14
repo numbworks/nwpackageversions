@@ -7,13 +7,13 @@ Alias: nwpv
 # GLOBAL MODULES
 import copy
 import re
-from time import sleep
 import requests
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
 from re import Match, Pattern
 from requests import Response
+from time import sleep
 from typing import Any, Callable, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
 
