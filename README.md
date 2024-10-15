@@ -14,7 +14,7 @@ Contact: numbworks@gmail.com
 
 From the documentation:
 
-> nwpackageversions is a Python module that helps with retrieving package information from PyPi.org and comparing them with what you have installed locally.
+> nwpackageversions is a Python library that helps with retrieving package information from PyPi.org and comparing them with what you have installed locally.
 
 ## Getting started
 
