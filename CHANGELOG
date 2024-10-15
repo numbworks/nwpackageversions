@@ -1,5 +1,9 @@
 v1.0.0
 - Library:
-	- Feature: support retrieving package information from PyPi.org.
+	- Feature: support retrieving local package information from requirements.txt and Dockerfile (devcontainer). 
+	- Feature: support retrieving release information from PyPi.org.
+	- Feature: ability to compare local package information and PyPi.org's release information.
+- Notebook:
+	- Feature: demo for the main use case (evaluate the up-to-date status of the dependencies).
 - Documentation:
 	- Feature: covers all the features available in v1.0.0.
