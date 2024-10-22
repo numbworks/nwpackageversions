@@ -6,6 +6,7 @@ Contact: numbworks@gmail.com
 | Date | Author | Description |
 |---|---|---|
 | 2024-10-07 | numbworks | Created. |
+| 2024-10-22 | numbworks | Updated to v1.1.0. |
 
 ## Introduction
 
@@ -47,7 +48,7 @@ To inspect the functionalities of this Python module on Windows and Linux:
 
 ## Demo
 
-The main use case this Python library is to simplify the controlled upgrade of the dependencies of a project ("dependency freeze").
+The primary purpose of this Python library is to simplify and strengthen the process of keeping all project dependencies up-to-date.
 
 If we have all the dependencies for the given project listed in a `requirements.txt` file, we can run the few lines of code below against it:
 
@@ -112,19 +113,38 @@ To calculate the total unit test coverage in Visual Studio Code (while still con
 
 4. Done!
 
+## Dependency Update
+
+To check for the updatability of the dependencies this library is built upon, you can use the library itself. Please:
+
+1. Launch Visual Studio Code;
+2. Click on <ins>File</ins> > <ins>Open folder</ins> > `nwpackageversions`;
+3. <ins>Terminal</ins> > <ins>New Terminal</ins>;
+4. Run the following commands to perform the dependency check (it requires an internet connection):
+
+    ```
+    cd src
+    python3
+    from nwpackageversions import StatusChecker
+    StatusChecker().check("/workspaces/nwpackageversions/.devcontainer/Dockerfile")
+    ```
+
+5. You will get a log containing a list of up-to-date and out-of-date dependencies, that you can use to decide which update to perform.
+6. Done!
+
 ## How-To Release
 
 To try out if this Python module installs as a package as expected in the projects that have it as dependency, you'll need to simulate a release. 
 
 In order to do so:
 
-1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.0.0`;
+1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.1.0`;
 
 2. Open your terminal application of choice and type the following commands:
 
     ```
     docker run -it python:3.12.5-bookworm /bin/bash
-    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.0.0#egg=nwpackageversions&subdirectory=src'
+    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.1.0#egg=nwpackageversions&subdirectory=src'
     pip show nwpackageversions | grep "Version"
     ```
 
