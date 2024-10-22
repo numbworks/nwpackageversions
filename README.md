@@ -4,12 +4,6 @@
 
 Contact: numbworks@gmail.com
 
-## Revision History
-
-| Date | Author | Description |
-|---|---|---|
-| 2024-10-07 | numbworks | Created. |
-
 ## Introduction
 
 From the documentation:
