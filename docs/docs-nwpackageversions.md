@@ -6,6 +6,7 @@ Contact: numbworks@gmail.com
 | Date | Author | Description |
 |---|---|---|
 | 2024-10-07 | numbworks | Created. |
+| 2024-10-22 | numbworks | Updated to v1.1.0. |
 
 ## Introduction
 
@@ -47,39 +48,7 @@ To inspect the functionalities of this Python module on Windows and Linux:
 
 ## Demo
 
-The main use case this Python library is to simplify the controlled upgrade of the dependencies of a project ("dependency freeze").
-
-If we have all the dependencies for the given project listed in a `requirements.txt` file, we can run the few lines of code below against it:
-
-```python
-from typing import Optional, cast
-from nwpackageversions import StatusChecker, StatusSummary
-
-requirements_fp : str = r"/workspaces/nwpackageversions/demo/requirements_demo.txt"
-status_checker : StatusChecker = StatusChecker()
-status_summary : Optional[StatusSummary] = status_checker.try_check(file_path = requirements_fp)
-```
-
-The output of the logger will be something like:
-
-```
-The status checking operation has started!
-The list of local packages will be loaded from the following 'file_path': '/workspaces/nwpackageversions/demo/requirements_demo.txt'.
-The 'waiting_time' between each fetching request will be: '5' seconds.
-'3' local packages has been found and successfully loaded.
-'0' unparsed lines.
-Now starting to evaluate the status of each local package...
-The status evaluation operation has been successfully completed.
-{ 'description': 'The current version ('2.26.0') of 'requests' doesn't match with the most recent release ('2.32.3', '2024-05-29').' }
-{ 'description': 'The current version ('4.10.0') of 'beautifulsoup4' doesn't match with the most recent release ('4.13.0b2', '2024-03-20').' }
-{ 'description': 'The current version ('3.4.3') of 'asyncio' matches with the most recent release ('3.4.3', '2015-03-10').' }
-Now starting the creation of a status summary...
-The status summary has been successfully created.
-{ 'total_packages': '3', 'matching': '1', 'matching_prc': '33.33%', 'mismatching': '2', 'mismatching_prc': '66.67%' }
-The status checking operation has been completed.
-```
-
-According to this report, we will be quickly establish the status of your project on the dependency perspective, decide which package(s) are too old and proceed with controlled upgrades.
+The primary purpose of this Python library is to simplify and strengthen the process of keeping all project dependencies up-to-date.
 
 An interactive demo environment for the scenario above is provided in the attached Jupyter Notebook file ([nwpackageversions.ipynb](../src/nwpackageversions.ipynb)).
 
@@ -112,19 +81,38 @@ To calculate the total unit test coverage in Visual Studio Code (while still con
 
 4. Done!
 
+## Dependency Update
+
+To check for the updatability of the dependencies this library is built upon, you can use the library itself. Please:
+
+1. Launch Visual Studio Code;
+2. Click on <ins>File</ins> > <ins>Open folder</ins> > `nwpackageversions`;
+3. <ins>Terminal</ins> > <ins>New Terminal</ins>;
+4. Run the following commands to perform the dependency check (it requires an internet connection):
+
+    ```
+    cd src
+    python3
+    from nwpackageversions import StatusChecker
+    StatusChecker().check("/workspaces/nwpackageversions/.devcontainer/Dockerfile")
+    ```
+
+5. You will get a log containing a list of up-to-date and out-of-date dependencies, that you can use to decide which update to perform.
+6. Done!
+
 ## How-To Release
 
 To try out if this Python module installs as a package as expected in the projects that have it as dependency, you'll need to simulate a release. 
 
 In order to do so:
 
-1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.0.0`;
+1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.1.0`;
 
 2. Open your terminal application of choice and type the following commands:
 
     ```
     docker run -it python:3.12.5-bookworm /bin/bash
-    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.0.0#egg=nwpackageversions&subdirectory=src'
+    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.1.0#egg=nwpackageversions&subdirectory=src'
     pip show nwpackageversions | grep "Version"
     ```
 
