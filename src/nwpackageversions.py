@@ -198,6 +198,12 @@ class LambdaCollection():
         '''An adapter around time.sleep().'''
 
         return lambda waiting_time : sleep(cast(float, waiting_time))      
+    @staticmethod
+    def do_nothing_function() -> Callable[[Any], None]:
+
+        '''Does nothing.'''
+
+        return lambda x : None
 class _MessageCollection():
 
     '''Collects all the messages used for logging and for the exceptions.'''
