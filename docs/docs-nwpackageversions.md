@@ -88,13 +88,13 @@ To check for the updatability of the dependencies this library is built upon, yo
 1. Launch Visual Studio Code;
 2. Click on <ins>File</ins> > <ins>Open folder</ins> > `nwpackageversions`;
 3. <ins>Terminal</ins> > <ins>New Terminal</ins>;
-4. Run the following commands to perform the dependency check (it requires an internet connection):
+4. Run the following commands to perform the requirement check (it requires an internet connection):
 
     ```
     cd src
     python3
-    from nwpackageversions import StatusChecker
-    StatusChecker().check("/workspaces/nwpackageversions/.devcontainer/Dockerfile")
+    from nwpackageversions import RequirementChecker
+    RequirementChecker().check("/workspaces/nwpackageversions/.devcontainer/Dockerfile")
     ```
 
 5. You will get a log containing a list of up-to-date and out-of-date dependencies, that you can use to decide which update to perform.

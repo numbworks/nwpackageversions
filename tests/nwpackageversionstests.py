@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package
-from nwpackageversions import PyPiReleaseFetcher, StatusChecker, StatusDetail, StatusSummary, XMLItem, Release, FSession
+from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, StatusDetail, StatusSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -823,7 +823,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
-class StatusCheckerTestCase(unittest.TestCase):
+class RequirementCheckerTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
 
@@ -846,21 +846,21 @@ class StatusCheckerTestCase(unittest.TestCase):
         self.package2 : Package = Package(name = "pandas", version = "2.2.2")
         self.release2 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
         self.expected_tpl2 : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(self.package2, self.release2))
-    def test_statuschecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
+    def test_requirementchecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
         
         # Arrange
         # Act
-        status_checker : StatusChecker = StatusChecker()
-        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = self.package1, most_recent_release = self.release1) # type: ignore
+        requirement_checker : RequirementChecker = RequirementChecker()
+        actual : Tuple[bool, str] = requirement_checker._RequirementChecker__compare(current_package = self.package1, most_recent_release = self.release1) # type: ignore
         
         # Assert
         self.assertEqual(actual, self.expected_tpl1)
-    def test_statuschecker_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
+    def test_requirementchecker_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
         
         # Arrange
         # Act
-        status_checker : StatusChecker = StatusChecker()
-        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = self.package2, most_recent_release = self.release2) # type: ignore
+        requirement_checker : RequirementChecker = RequirementChecker()
+        actual : Tuple[bool, str] = requirement_checker._RequirementChecker__compare(current_package = self.package2, most_recent_release = self.release2) # type: ignore
         
         # Assert
         self.assertEqual(actual, self.expected_tpl2)
@@ -868,8 +868,8 @@ class StatusCheckerTestCase(unittest.TestCase):
         
         # Arrange
         # Act
-        status_checker : StatusChecker = StatusChecker()
-        actual : list[StatusDetail] = status_checker._StatusChecker__create_status_details(l_session = self.l_session1, waiting_time = 0) # type: ignore
+        requirement_checker : RequirementChecker = RequirementChecker()
+        actual : list[StatusDetail] = requirement_checker._RequirementChecker__create_status_details(l_session = self.l_session1, waiting_time = 0) # type: ignore
         
         # Assert
         self.assertTrue(
@@ -885,8 +885,8 @@ class StatusCheckerTestCase(unittest.TestCase):
         expected : str = "50.00%"
         
         # Act
-        status_checker : StatusChecker = StatusChecker()
-        actual : str = status_checker._StatusChecker__calculate_prc(value = value, total = total) # type: ignore
+        requirement_checker : RequirementChecker = RequirementChecker()
+        actual : str = requirement_checker._RequirementChecker__calculate_prc(value = value, total = total) # type: ignore
         
         # Assert
         self.assertEqual(actual, expected)
@@ -900,8 +900,8 @@ class StatusCheckerTestCase(unittest.TestCase):
 
         # Act, Assert
         with self.assertRaises(expected_exception = Exception, msg = expected):
-            status_checker : StatusChecker = StatusChecker()
-            status_checker.check(file_path = file_path, waiting_time = waiting_time)
+            requirement_checker : RequirementChecker = RequirementChecker()
+            requirement_checker.check(file_path = file_path, waiting_time = waiting_time)
     def test_check_shouldreturnexpectedstatussummaryandlogexpectedmessages_wheninvoked(self):
         
         # Arrange
@@ -962,7 +962,7 @@ class StatusCheckerTestCase(unittest.TestCase):
         ]        
 
         # Act
-        status_checker : StatusChecker = StatusChecker(
+        requirement_checker : RequirementChecker = RequirementChecker(
             package_loader = package_loader_mock,
             release_fetcher = release_fetcher_mock,
             logging_function = logging_function_mock,
@@ -970,7 +970,7 @@ class StatusCheckerTestCase(unittest.TestCase):
             sleeping_function = sleeping_function_mock
 
         )
-        actual : StatusSummary = status_checker.check(file_path = file_path, waiting_time = waiting_time)
+        actual : StatusSummary = requirement_checker.check(file_path = file_path, waiting_time = waiting_time)
 
         # Assert
         self.assertEqual(actual.total_packages, expected.total_packages)
@@ -991,7 +991,7 @@ class StatusCheckerTestCase(unittest.TestCase):
         logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
 
         # Act
-        status_checker : StatusChecker = StatusChecker(
+        requirement_checker : RequirementChecker = RequirementChecker(
             package_loader = LocalPackageLoader(),
             release_fetcher = PyPiReleaseFetcher(),
             logging_function = logging_function_mock,
@@ -999,7 +999,7 @@ class StatusCheckerTestCase(unittest.TestCase):
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        status_summary : Optional[StatusSummary] = status_checker.try_check(file_path = file_path, waiting_time = waiting_time)
+        status_summary : Optional[StatusSummary] = requirement_checker.try_check(file_path = file_path, waiting_time = waiting_time)
         
         # Assert
         self.assertIsNone(status_summary)
@@ -1043,7 +1043,7 @@ class StatusCheckerTestCase(unittest.TestCase):
         ]
 
         # Act
-        status_checker : StatusChecker = StatusChecker(
+        requirement_checker : RequirementChecker = RequirementChecker(
             package_loader = LocalPackageLoader(),
             release_fetcher = PyPiReleaseFetcher(),
             logging_function = logging_function_mock,
@@ -1051,7 +1051,7 @@ class StatusCheckerTestCase(unittest.TestCase):
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        status_checker.log_status_summary(status_summary = status_summary)
+        requirement_checker.log_status_summary(status_summary = status_summary)
 
         # Assert
         self.assertEqual(messages, expected)

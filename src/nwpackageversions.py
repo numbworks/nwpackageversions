@@ -649,9 +649,9 @@ class PyPiReleaseFetcher():
         )
 
         return f_session
-class StatusChecker():
+class RequirementChecker():
 
-    '''This class collects all the logic related to package status checking.'''
+    '''This class collects all the logic related to requirement status checking.'''
 
     __package_loader : LocalPackageLoader
     __release_fetcher : PyPiReleaseFetcher
