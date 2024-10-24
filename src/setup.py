@@ -6,7 +6,7 @@ from setuptools import setup
 # INFORMATION
 MODULE_ALIAS : str = "nwpv"
 MODULE_NAME : str = "nwpackageversions"
-MODULE_VERSION : str = "1.1.0"
+MODULE_VERSION : str = "1.2.0"
 
 # SETUP
 setup(
