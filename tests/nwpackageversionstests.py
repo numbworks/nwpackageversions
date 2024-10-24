@@ -864,7 +864,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(actual, self.expected_tpl2)
-    def test_createrequirementdetails_shouldreturnexpectedlistofRequirementDetails_wheninvoked(self) -> None:
+    def test_createrequirementdetails_shouldreturnexpectedlistofrequirementdetails_wheninvoked(self) -> None:
         
         # Arrange
         # Act
@@ -902,7 +902,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         with self.assertRaises(expected_exception = Exception, msg = expected):
             requirement_checker : RequirementChecker = RequirementChecker()
             requirement_checker.check(file_path = file_path, waiting_time = waiting_time)
-    def test_check_shouldreturnexpectedRequirementSummaryandlogexpectedmessages_wheninvoked(self):
+    def test_check_shouldreturnexpectedrequirementsummaryandlogexpectedmessages_wheninvoked(self):
         
         # Arrange
         packages : list[Package] = [
