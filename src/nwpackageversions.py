@@ -697,7 +697,7 @@ class RequirementChecker():
         return (cast(bool, is_version_matching), cast(str, description))
     def __create_requirement_detail(self, current_package : Package, most_recent_release : Release) -> RequirementDetail:
 
-        '''Creates a StatusDetail object out of the provided current_package and most_recent_release.'''
+        '''Creates a RequirementDetail object out of the provided current_package and most_recent_release.'''
 
         is_version_matching, description = self.__compare(
             current_package = current_package, 
@@ -739,7 +739,7 @@ class RequirementChecker():
         return prc
     def __create_requirement_summary(self, requirement_details : list[RequirementDetail]) -> RequirementSummary:
 
-        '''Creates a StatusSummary object out of the provided requirement_details.'''
+        '''Creates a RequirementSummary object out of the provided requirement_details.'''
 
         total_packages : int = len(requirement_details)
         matching : int = 0
@@ -770,7 +770,7 @@ class RequirementChecker():
             
                 1. loads a list of locally-installed Python packages from file_path
                 2. fetches the latest information about each of them on PyPi.org
-                3. returns a StatusSummary object
+                3. returns a RequirementSummary object
             
             All the steps are logged.
             It raises an Exception if an issue arises.
