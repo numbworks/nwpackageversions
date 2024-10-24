@@ -108,9 +108,9 @@ class FSession():
                 " }"                
             )
 @dataclass(frozen = True)
-class StatusDetail():
+class RequirementDetail():
 
-    '''Represents a detailed status.'''
+    '''Represents a detailed requirement status.'''
 
     current_package : Package
     most_recent_release : Release
@@ -122,16 +122,16 @@ class StatusDetail():
     def __repr__(self):
         return self.__str__()
 @dataclass(frozen = True)
-class StatusSummary():
+class RequirementSummary():
 
-    '''Represents a summarized status.'''
+    '''Represents a summarized requirement status.'''
 
     total_packages : int
     matching : int
     matching_prc : str
     mismatching : int
     mismatching_prc : str
-    details : list[StatusDetail]
+    details : list[RequirementDetail]
 
     def __str__(self):
         return str(
@@ -248,10 +248,10 @@ class _MessageCollection():
     def status_evaluation_operation_successfully_loaded() -> str:
         return "The status evaluation operation has been successfully completed."
     @staticmethod
-    def starting_creation_status_summary() -> str:
+    def starting_creation_requirement_summary() -> str:
         return "Now starting the creation of a status summary..."
     @staticmethod
-    def status_summary_successfully_created() -> str:
+    def requirement_summary_successfully_created() -> str:
         return "The status summary has been successfully created."
     @staticmethod
     def status_checking_operation_completed() -> str:
@@ -689,7 +689,7 @@ class RequirementChecker():
             description = _MessageCollection.current_version_doesnt_match(current_package, most_recent_release)
 
         return (cast(bool, is_version_matching), cast(str, description))
-    def __create_status_detail(self, current_package : Package, most_recent_release : Release) -> StatusDetail:
+    def __create_requirement_detail(self, current_package : Package, most_recent_release : Release) -> RequirementDetail:
 
         '''Creates a StatusDetail object out of the provided current_package and most_recent_release.'''
 
@@ -698,32 +698,32 @@ class RequirementChecker():
             most_recent_release = most_recent_release
         )
 
-        status_detail : StatusDetail = StatusDetail(
+        requirement_detail : RequirementDetail = RequirementDetail(
             current_package = current_package,
             most_recent_release = most_recent_release,
             is_version_matching = is_version_matching,
             description = description
         )
 
-        return status_detail
-    def __create_status_details(self, l_session : LSession, waiting_time : int) -> list[StatusDetail]:
+        return requirement_detail
+    def __create_requirement_details(self, l_session : LSession, waiting_time : int) -> list[RequirementDetail]:
 
         '''Creates a list of StatusDetail objects out of the provided l_session.'''
 
-        status_details : list[StatusDetail] = []
+        requirement_details : list[RequirementDetail] = []
         for current_package in l_session.packages:
 
             f_session : FSession = self.__release_fetcher.fetch(package_name = current_package.name)
             
-            status_detail : StatusDetail = self.__create_status_detail(
+            requirement_detail : RequirementDetail = self.__create_requirement_detail(
                 current_package = current_package, 
                 most_recent_release = f_session.most_recent_release
             )
-            status_details.append(status_detail)
+            requirement_details.append(requirement_detail)
 
             self.__sleeping_function(waiting_time)
         
-        return status_details
+        return requirement_details
     def __calculate_prc(self, value : int, total : int) -> str:
 
         '''Calculates % out of provided value and total.'''
@@ -731,33 +731,33 @@ class RequirementChecker():
         prc : str = f"{(value / total) * 100:.2f}%"
 
         return prc
-    def __create_status_summary(self, status_details : list[StatusDetail]) -> StatusSummary:
+    def __create_requirement_summary(self, requirement_details : list[RequirementDetail]) -> RequirementSummary:
 
-        '''Creates a StatusSummary object out of the provided status_details.'''
+        '''Creates a StatusSummary object out of the provided requirement_details.'''
 
-        total_packages : int = len(status_details)
+        total_packages : int = len(requirement_details)
         matching : int = 0
         mismatching : int = 0
 
-        for status_detail in status_details:
+        for requirement_detail in requirement_details:
             
-            if status_detail.is_version_matching == True:
+            if requirement_detail.is_version_matching == True:
                 matching += 1
             else:
                 mismatching += 1
 
-        status_summary : StatusSummary = StatusSummary(
+        requirement_summary : RequirementSummary = RequirementSummary(
             total_packages = total_packages,
             matching = matching,
             matching_prc = self.__calculate_prc(value = matching, total = total_packages),
             mismatching = mismatching,
             mismatching_prc = self.__calculate_prc(value = mismatching, total = total_packages),
-            details = status_details
+            details = requirement_details
         )
 
-        return status_summary
+        return requirement_summary
 
-    def check(self, file_path : str, waiting_time : int = 5) -> StatusSummary:
+    def check(self, file_path : str, waiting_time : int = 5) -> RequirementSummary:
 
         '''
             This method:
@@ -784,20 +784,20 @@ class RequirementChecker():
         self.__logging_function(_MessageCollection.x_unparsed_lines(l_session.unparsed_lines))
         self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
 
-        status_details : list[StatusDetail] = self.__create_status_details(l_session = l_session, waiting_time = waiting_time)
+        requirement_details : list[RequirementDetail] = self.__create_requirement_details(l_session = l_session, waiting_time = waiting_time)
 
         self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
-        self.__list_logging_function(self.__logging_function, status_details)
-        self.__logging_function(_MessageCollection.starting_creation_status_summary())
+        self.__list_logging_function(self.__logging_function, requirement_details)
+        self.__logging_function(_MessageCollection.starting_creation_requirement_summary())
 
-        status_summary : StatusSummary = self.__create_status_summary(status_details = status_details)
+        requirement_summary : RequirementSummary = self.__create_requirement_summary(requirement_details = requirement_details)
 
-        self.__logging_function(_MessageCollection.status_summary_successfully_created())
-        self.__logging_function(str(status_summary))
+        self.__logging_function(_MessageCollection.requirement_summary_successfully_created())
+        self.__logging_function(str(requirement_summary))
         self.__logging_function(_MessageCollection.status_checking_operation_completed())
 
-        return status_summary
-    def try_check(self, file_path : str, waiting_time : int = 5) -> Optional[StatusSummary]:
+        return requirement_summary
+    def try_check(self, file_path : str, waiting_time : int = 5) -> Optional[RequirementSummary]:
 
         '''
             It performs the same operations as check().
@@ -813,12 +813,12 @@ class RequirementChecker():
             self.__logging_function(str(e))
             
             return None
-    def log_status_summary(self, status_summary : StatusSummary) -> None:
+    def log_requirement_summary(self, requirement_summary : RequirementSummary) -> None:
 
-        '''Logs status_summary by using logging_function and list_logging_function.'''
+        '''Logs requirement_summary by using logging_function and list_logging_function.'''
 
-        self.__logging_function(str(status_summary))
-        self.__list_logging_function(self.__logging_function, status_summary.details)
+        self.__logging_function(str(requirement_summary))
+        self.__list_logging_function(self.__logging_function, requirement_summary.details)
 
 # MAIN
 if __name__ == "__main__":
