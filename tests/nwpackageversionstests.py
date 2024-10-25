@@ -1055,6 +1055,20 @@ class RequirementCheckerTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(messages, expected)
+    def test_getdefaultdevcointainerdockerfilepath_shouldreturnexpectedpath_wheninvoked(self) -> None:
+        
+        # Arrange
+        expected: str = os.path.join("/path/.devcontainer", "Dockerfile")
+
+        # Act, Assert
+        with patch('os.path.abspath') as mock_abspath:
+
+            mock_abspath.return_value = r"/path/src"
+
+            requirement_checker : RequirementChecker = RequirementChecker()
+            actual : str = requirement_checker.get_default_devcointainer_dockerfile_path()
+
+            self.assertEqual(actual, expected)
 
 # Main
 if __name__ == "__main__":
