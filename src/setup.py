@@ -12,7 +12,7 @@ MODULE_VERSION : str = "1.2.0"
 setup(
     name = MODULE_NAME,
     version = MODULE_VERSION,
-    description = "A module that helps with retrieving package information from PyPi.org.",
+    description = "A Python library that helps with retrieving package information from PyPi.org and comparing them with what you have installed locally.",
     author = "numbworks",
     url = "https://github.com/numbworks/nwpackageversions",
     py_modules = [ MODULE_NAME ],
