@@ -81,7 +81,7 @@ class SupportMethodProvider():
             )
 
     @staticmethod
-    def are_RequirementDetails_equal(sd1 : RequirementDetail, sd2 : RequirementDetail) -> bool:
+    def are_requirementdetails_equal(sd1 : RequirementDetail, sd2 : RequirementDetail) -> bool:
 
         '''Returns True if all the fields of the two objects contain the same values.'''
 
@@ -92,14 +92,14 @@ class SupportMethodProvider():
             sd1.description == sd2.description
             )
     @staticmethod
-    def are_lists_of_RequirementDetails_equal(list1 : list[RequirementDetail], list2 : list[RequirementDetail]) -> bool:
+    def are_lists_of_requirementdetails_equal(list1 : list[RequirementDetail], list2 : list[RequirementDetail]) -> bool:
 
         '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
 
         return SupportMethodProvider.__are_lists_equal(
                 list1 = list1, 
                 list2 = list2, 
-                comparer = lambda sd1, sd2 : SupportMethodProvider.are_RequirementDetails_equal(sd1, sd2)
+                comparer = lambda sd1, sd2 : SupportMethodProvider.are_requirementdetails_equal(sd1, sd2)
             )
 
     @staticmethod
@@ -582,7 +582,7 @@ class RequirementSummaryTestCase(unittest.TestCase):
         self.assertEqual(requirement_summary.mismatching_prc, self.mismatching_prc)
         self.assertEqual(len(requirement_summary.details), len(self.details))
         self.assertTrue(
-            SupportMethodProvider.are_lists_of_RequirementDetails_equal(
+            SupportMethodProvider.are_lists_of_requirementdetails_equal(
                 list1 = requirement_summary.details,
                 list2 = self.details
             ))
@@ -883,7 +883,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         
         # Assert
         self.assertTrue(
-            SupportMethodProvider.are_lists_of_RequirementDetails_equal(
+            SupportMethodProvider.are_lists_of_requirementdetails_equal(
                 list1 = actual,
                 list2 = self.expected_sd1
             ))
