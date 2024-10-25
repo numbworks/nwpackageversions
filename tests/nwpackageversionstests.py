@@ -11,8 +11,8 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package
-from nwpackageversions import PyPiReleaseFetcher, StatusChecker, StatusDetail, StatusSummary, XMLItem, Release, FSession
+from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, LanguageChecker
+from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -81,7 +81,7 @@ class SupportMethodProvider():
             )
 
     @staticmethod
-    def are_statusdetails_equal(sd1 : StatusDetail, sd2 : StatusDetail) -> bool:
+    def are_requirementdetails_equal(sd1 : RequirementDetail, sd2 : RequirementDetail) -> bool:
 
         '''Returns True if all the fields of the two objects contain the same values.'''
 
@@ -92,14 +92,14 @@ class SupportMethodProvider():
             sd1.description == sd2.description
             )
     @staticmethod
-    def are_lists_of_statusdetails_equal(list1 : list[StatusDetail], list2 : list[StatusDetail]) -> bool:
+    def are_lists_of_requirementdetails_equal(list1 : list[RequirementDetail], list2 : list[RequirementDetail]) -> bool:
 
         '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
 
         return SupportMethodProvider.__are_lists_equal(
                 list1 = list1, 
                 list2 = list2, 
-                comparer = lambda sd1, sd2 : SupportMethodProvider.are_statusdetails_equal(sd1, sd2)
+                comparer = lambda sd1, sd2 : SupportMethodProvider.are_requirementdetails_equal(sd1, sd2)
             )
 
     @staticmethod
@@ -410,6 +410,16 @@ class LambdaCollectionTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(messages, ["1", "2", "3"])
+    def test_donothingfunction_shoulddonothing_wheninvoked(self) -> None:
+        
+        # Arrange
+        do_nothing_function : Callable[[Any], None] = LambdaCollection.do_nothing_function()
+
+        # Act
+        actual : None = do_nothing_function("test")
+
+        # Assert
+        self.assertIsNone(actual)
 class LSessionTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -462,7 +472,7 @@ class LSessionTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
-class StatusDetailTestCase(unittest.TestCase):
+class RequirementDetailTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
 
@@ -479,11 +489,11 @@ class StatusDetailTestCase(unittest.TestCase):
             "('2.1.2', '2024-10-05')."
         )
         self.expected2 : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
-    def test_statusdetail_shouldinitializeasexpected_wheninvoked(self) -> None:
+    def test_requirementdetail_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
         # Act
-        status_detail : StatusDetail = StatusDetail(
+        requirement_detail : RequirementDetail = RequirementDetail(
             current_package = self.package1,
             most_recent_release = self.release1,
             is_version_matching = self.is_version_matching1,
@@ -491,14 +501,14 @@ class StatusDetailTestCase(unittest.TestCase):
         )
 
         # Assert
-        self.assertEqual(status_detail.current_package, self.package1)
-        self.assertEqual(status_detail.most_recent_release, self.release1)
-        self.assertTrue(status_detail.is_version_matching)
-        self.assertEqual(status_detail.description, self.description1)
-    def test_statusdetail_shouldreturnexpectedstring_wheninvoked(self) -> None:
+        self.assertEqual(requirement_detail.current_package, self.package1)
+        self.assertEqual(requirement_detail.most_recent_release, self.release1)
+        self.assertTrue(requirement_detail.is_version_matching)
+        self.assertEqual(requirement_detail.description, self.description1)
+    def test_requirementdetail_shouldreturnexpectedstring_wheninvoked(self) -> None:
         
 		# Arrange
-        status_detail : StatusDetail = StatusDetail(
+        requirement_detail : RequirementDetail = RequirementDetail(
             current_package = self.package2,
             most_recent_release = self.release2,
             is_version_matching = self.is_version_matching2,
@@ -506,13 +516,13 @@ class StatusDetailTestCase(unittest.TestCase):
         )
 
         # Act
-        actual_str : str = str(status_detail)
-        actual_repr : str = status_detail.__repr__()
+        actual_str : str = str(requirement_detail)
+        actual_repr : str = requirement_detail.__repr__()
 
         # Assert
         self.assertEqual(actual_str, self.expected2)
         self.assertEqual(actual_repr, self.expected2)
-class StatusSummaryTestCase(unittest.TestCase):
+class RequirementSummaryTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         
@@ -521,7 +531,7 @@ class StatusSummaryTestCase(unittest.TestCase):
         self.is_version_matching1 : bool = True
         self.description1 : str = "The current version matches the most recent release."
 		
-        self.status_detail1 : StatusDetail = StatusDetail(
+        self.requirement_detail1 : RequirementDetail = RequirementDetail(
             current_package = self.package1,
             most_recent_release = self.release1,
             is_version_matching = self.is_version_matching1,
@@ -533,7 +543,7 @@ class StatusSummaryTestCase(unittest.TestCase):
         self.is_version_matching2 : bool = False
         self.description2 : str = "The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12')."
 		
-        self.status_detail2 : StatusDetail = StatusDetail(
+        self.requirement_detail2 : RequirementDetail = RequirementDetail(
             current_package = self.package2,
             most_recent_release = self.release2,
             is_version_matching = self.is_version_matching2,
@@ -545,17 +555,17 @@ class StatusSummaryTestCase(unittest.TestCase):
         self.matching_prc : str = "50.00%"
         self.mismatching : int = 1
         self.mismatching_prc : str = "50.00%"
-        self.details : list[StatusDetail] = [
-			self.status_detail1, 
-			self.status_detail2
+        self.details : list[RequirementDetail] = [
+			self.requirement_detail1, 
+			self.requirement_detail2
 		]
 
         self.expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
-    def test_statussummary_shouldinitializeasexpected_wheninvoked(self) -> None:
+    def test_requirementsummary_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
         # Act
-        status_summary : StatusSummary = StatusSummary(
+        requirement_summary : RequirementSummary = RequirementSummary(
             total_packages = self.total_packages,
             matching = self.matching,
             matching_prc = self.matching_prc,
@@ -565,21 +575,21 @@ class StatusSummaryTestCase(unittest.TestCase):
         )
 
         # Assert
-        self.assertEqual(status_summary.total_packages, self.total_packages)
-        self.assertEqual(status_summary.matching, self.matching)
-        self.assertEqual(status_summary.matching_prc, self.matching_prc)
-        self.assertEqual(status_summary.mismatching, self.mismatching)
-        self.assertEqual(status_summary.mismatching_prc, self.mismatching_prc)
-        self.assertEqual(len(status_summary.details), len(self.details))
+        self.assertEqual(requirement_summary.total_packages, self.total_packages)
+        self.assertEqual(requirement_summary.matching, self.matching)
+        self.assertEqual(requirement_summary.matching_prc, self.matching_prc)
+        self.assertEqual(requirement_summary.mismatching, self.mismatching)
+        self.assertEqual(requirement_summary.mismatching_prc, self.mismatching_prc)
+        self.assertEqual(len(requirement_summary.details), len(self.details))
         self.assertTrue(
-            SupportMethodProvider.are_lists_of_statusdetails_equal(
-                list1 = status_summary.details,
+            SupportMethodProvider.are_lists_of_requirementdetails_equal(
+                list1 = requirement_summary.details,
                 list2 = self.details
             ))
-    def test_statussummary_shouldreturnexpectedstring_wheninvoked(self) -> None:
+    def test_requirementsummary_shouldreturnexpectedstring_wheninvoked(self) -> None:
         
 		# Arrange
-        status_summary : StatusSummary = StatusSummary(
+        requirement_summary : RequirementSummary = RequirementSummary(
             total_packages = self.total_packages,
             matching = self.matching,
             matching_prc = self.matching_prc,
@@ -589,7 +599,7 @@ class StatusSummaryTestCase(unittest.TestCase):
         )
 
         # Act
-        actual : str = str(status_summary)
+        actual : str = str(requirement_summary)
 
         # Assert
         self.assertEqual(actual, self.expected) 
@@ -823,7 +833,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
-class StatusCheckerTestCase(unittest.TestCase):
+class RequirementCheckerTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
 
@@ -835,45 +845,60 @@ class StatusCheckerTestCase(unittest.TestCase):
             packages = [ self.package1 ],
             unparsed_lines = []
         )
-        self.status_detail1 : StatusDetail = StatusDetail(
+
+        self.f_session1 : FSession = FSession(
+            package_name = "pandas",
+            most_recent_release = self.release1,
+            releases = [self.release1],
+            xml_items = [
+                XMLItem(title="2.1.2", link="https://pypi.org/project/pandas/2.2.3/", description="", author=None, pubdate=datetime.strptime("Sat, 05 Oct 2024 18:28:18 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sat, 05 Oct 2024 18:28:18 GMT"),
+            ]
+        )
+
+        self.requirement_detail1 : RequirementDetail = RequirementDetail(
             current_package = self.package1,
             most_recent_release = self.release1,
             is_version_matching = self.expected_tpl1[0],
             description = self.expected_tpl1[1]
         )
-        self.expected_sd1 : list[StatusDetail] = [ self.status_detail1 ]
+        self.expected_sd1 : list[RequirementDetail] = [ self.requirement_detail1 ]
 
         self.package2 : Package = Package(name = "pandas", version = "2.2.2")
         self.release2 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
         self.expected_tpl2 : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(self.package2, self.release2))
-    def test_statuschecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
+    def test_requirementchecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
         
         # Arrange
         # Act
-        status_checker : StatusChecker = StatusChecker()
-        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = self.package1, most_recent_release = self.release1) # type: ignore
+        requirement_checker : RequirementChecker = RequirementChecker()
+        actual : Tuple[bool, str] = requirement_checker._RequirementChecker__compare(current_package = self.package1, most_recent_release = self.release1) # type: ignore
         
         # Assert
         self.assertEqual(actual, self.expected_tpl1)
-    def test_statuschecker_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
+    def test_requirementchecker_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
         
         # Arrange
         # Act
-        status_checker : StatusChecker = StatusChecker()
-        actual : Tuple[bool, str] = status_checker._StatusChecker__compare(current_package = self.package2, most_recent_release = self.release2) # type: ignore
+        requirement_checker : RequirementChecker = RequirementChecker()
+        actual : Tuple[bool, str] = requirement_checker._RequirementChecker__compare(current_package = self.package2, most_recent_release = self.release2) # type: ignore
         
         # Assert
         self.assertEqual(actual, self.expected_tpl2)
-    def test_createstatusdetails_shouldreturnexpectedlistofstatusdetails_wheninvoked(self) -> None:
+    def test_createrequirementdetails_shouldreturnexpectedlistofrequirementdetails_wheninvoked(self) -> None:
         
         # Arrange
         # Act
-        status_checker : StatusChecker = StatusChecker()
-        actual : list[StatusDetail] = status_checker._StatusChecker__create_status_details(l_session = self.l_session1, waiting_time = 0) # type: ignore
+        release_fetcher_mock : PyPiReleaseFetcher = Mock()
+        release_fetcher_mock.fetch.return_value = self.f_session1
+
+        requirement_checker : RequirementChecker = RequirementChecker(
+            release_fetcher = release_fetcher_mock
+        )
+        actual : list[RequirementDetail] = requirement_checker._RequirementChecker__create_requirement_details(l_session = self.l_session1, waiting_time = 0) # type: ignore
         
         # Assert
         self.assertTrue(
-            SupportMethodProvider.are_lists_of_statusdetails_equal(
+            SupportMethodProvider.are_lists_of_requirementdetails_equal(
                 list1 = actual,
                 list2 = self.expected_sd1
             ))
@@ -885,8 +910,8 @@ class StatusCheckerTestCase(unittest.TestCase):
         expected : str = "50.00%"
         
         # Act
-        status_checker : StatusChecker = StatusChecker()
-        actual : str = status_checker._StatusChecker__calculate_prc(value = value, total = total) # type: ignore
+        requirement_checker : RequirementChecker = RequirementChecker()
+        actual : str = requirement_checker._RequirementChecker__calculate_prc(value = value, total = total) # type: ignore
         
         # Assert
         self.assertEqual(actual, expected)
@@ -900,9 +925,9 @@ class StatusCheckerTestCase(unittest.TestCase):
 
         # Act, Assert
         with self.assertRaises(expected_exception = Exception, msg = expected):
-            status_checker : StatusChecker = StatusChecker()
-            status_checker.check(file_path = file_path, waiting_time = waiting_time)
-    def test_check_shouldreturnexpectedstatussummaryandlogexpectedmessages_wheninvoked(self):
+            requirement_checker : RequirementChecker = RequirementChecker()
+            requirement_checker.check(file_path = file_path, waiting_time = waiting_time)
+    def test_check_shouldreturnexpectedrequirementsummaryandlogexpectedmessages_wheninvoked(self):
         
         # Arrange
         packages : list[Package] = [
@@ -933,7 +958,7 @@ class StatusCheckerTestCase(unittest.TestCase):
             "{ 'description': 'The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01').' }",
             "{ 'description': 'The current version ('22.12.0') of 'black' matches with the most recent release ('22.12.0', '2024-01-02').' }"
         ]
-        expected : StatusSummary = StatusSummary(
+        expected : RequirementSummary = RequirementSummary(
             total_packages = 2,
             matching = 2,
             matching_prc = "100.00%",
@@ -952,17 +977,18 @@ class StatusCheckerTestCase(unittest.TestCase):
             _MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages),
             _MessageCollection.x_unparsed_lines(l_session.unparsed_lines),
             _MessageCollection.starting_to_evaluate_status_local_package(),
+            _MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)),            
             _MessageCollection.status_evaluation_operation_successfully_loaded(),
             descriptions[0],
             descriptions[1],
-            _MessageCollection.starting_creation_status_summary(),
-            _MessageCollection.status_summary_successfully_created(),
+            _MessageCollection.starting_creation_requirement_summary(),
+            _MessageCollection.requirement_summary_successfully_created(),
             str(expected),
             _MessageCollection.status_checking_operation_completed()
         ]        
 
         # Act
-        status_checker : StatusChecker = StatusChecker(
+        requirement_checker : RequirementChecker = RequirementChecker(
             package_loader = package_loader_mock,
             release_fetcher = release_fetcher_mock,
             logging_function = logging_function_mock,
@@ -970,7 +996,7 @@ class StatusCheckerTestCase(unittest.TestCase):
             sleeping_function = sleeping_function_mock
 
         )
-        actual : StatusSummary = status_checker.check(file_path = file_path, waiting_time = waiting_time)
+        actual : RequirementSummary = requirement_checker.check(file_path = file_path, waiting_time = waiting_time)
 
         # Assert
         self.assertEqual(actual.total_packages, expected.total_packages)
@@ -987,11 +1013,11 @@ class StatusCheckerTestCase(unittest.TestCase):
         minimum_wt : int = 5
         expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
 
-        messages: list[str] = []
+        messages : list[str] = []
         logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
 
         # Act
-        status_checker : StatusChecker = StatusChecker(
+        requirement_checker : RequirementChecker = RequirementChecker(
             package_loader = LocalPackageLoader(),
             release_fetcher = PyPiReleaseFetcher(),
             logging_function = logging_function_mock,
@@ -999,12 +1025,12 @@ class StatusCheckerTestCase(unittest.TestCase):
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        status_summary : Optional[StatusSummary] = status_checker.try_check(file_path = file_path, waiting_time = waiting_time)
+        requirement_summary : Optional[RequirementSummary] = requirement_checker.try_check(file_path = file_path, waiting_time = waiting_time)
         
         # Assert
-        self.assertIsNone(status_summary)
+        self.assertIsNone(requirement_summary)
         self.assertEqual(messages[0], expected)
-    def test_logstatussummary_shouldlogexpectedmessages_wheninvoked(self):
+    def test_logrequirementsummary_shouldlogexpectedmessages_wheninvoked(self):
 
         # Arrange
         messages: list[str] = []
@@ -1014,20 +1040,20 @@ class StatusCheckerTestCase(unittest.TestCase):
             "{ 'description': 'The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01').' }",
             "{ 'description': 'The current version ('22.12.0') of 'black' matches with the most recent release ('22.12.0', '2024-01-02').' }"
         ]
-        status_summary : StatusSummary = StatusSummary(
+        requirement_summary : RequirementSummary = RequirementSummary(
             total_packages = 2,
             matching = 2,
             matching_prc = "100.00%",
             mismatching = 0,
             mismatching_prc = "0.00%",
             details = [ 
-                StatusDetail(
+                RequirementDetail(
                     current_package = Mock(), 
                     most_recent_release = Mock(), 
                     is_version_matching = True, 
                     description = "The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01')."
                 ),
-                StatusDetail(
+                RequirementDetail(
                     current_package = Mock(), 
                     most_recent_release = Mock(), 
                     is_version_matching = True, 
@@ -1037,13 +1063,13 @@ class StatusCheckerTestCase(unittest.TestCase):
         )
 
         expected: list[str] = [
-            str(status_summary),
+            str(requirement_summary),
             descriptions[0],
             descriptions[1]            
         ]
 
         # Act
-        status_checker : StatusChecker = StatusChecker(
+        requirement_checker : RequirementChecker = RequirementChecker(
             package_loader = LocalPackageLoader(),
             release_fetcher = PyPiReleaseFetcher(),
             logging_function = logging_function_mock,
@@ -1051,10 +1077,42 @@ class StatusCheckerTestCase(unittest.TestCase):
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        status_checker.log_status_summary(status_summary = status_summary)
+        requirement_checker.log_requirement_summary(requirement_summary = requirement_summary)
 
         # Assert
         self.assertEqual(messages, expected)
+    def test_getdefaultdevcointainerdockerfilepath_shouldreturnexpectedpath_wheninvoked(self) -> None:
+        
+        # Arrange
+        expected: str = os.path.join("/path/.devcontainer", "Dockerfile")
+
+        # Act, Assert
+        with patch('os.path.abspath') as mock_abspath:
+
+            mock_abspath.return_value = r"/path/src"
+
+            requirement_checker : RequirementChecker = RequirementChecker()
+            actual : str = requirement_checker.get_default_devcointainer_dockerfile_path()
+
+            self.assertEqual(actual, expected)
+class LanguageCheckerTestCase(unittest.TestCase):
+
+    @parameterized.expand([
+        [(3, 12, 1), (3, 12, 1), "The installed Python version is matching the expected one (installed: '3.12.1', expected: '3.12.1')."],
+        [(3, 11, 11), (3, 12, 1), "Warning! The installed Python is not matching the expected one (installed: '3.11.11', expected: '3.12.1')."],
+    ])
+    def test_getversionstatus_shouldreturnexpectedstring_wheninvoked(self, installed : Tuple[int, int, int], required : Tuple[int, int, int], expected : str):
+
+        # Arrange
+        # Act
+        with patch.object(sys, "version_info") as mocked_vi:
+            mocked_vi.major = installed[0]
+            mocked_vi.minor = installed[1]
+            mocked_vi.micro = installed[2]
+            actual : str = LanguageChecker().get_version_status(required = required)
+
+        # Assert
+        self.assertEqual(expected, actual)
 
 # Main
 if __name__ == "__main__":

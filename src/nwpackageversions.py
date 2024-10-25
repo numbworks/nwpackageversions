@@ -6,8 +6,10 @@ Alias: nwpv
 
 # GLOBAL MODULES
 import copy
+import os
 import re
 import requests
+import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
@@ -108,9 +110,9 @@ class FSession():
                 " }"                
             )
 @dataclass(frozen = True)
-class StatusDetail():
+class RequirementDetail():
 
-    '''Represents a detailed status.'''
+    '''Represents a detailed requirement status.'''
 
     current_package : Package
     most_recent_release : Release
@@ -122,16 +124,16 @@ class StatusDetail():
     def __repr__(self):
         return self.__str__()
 @dataclass(frozen = True)
-class StatusSummary():
+class RequirementSummary():
 
-    '''Represents a summarized status.'''
+    '''Represents a summarized requirement status.'''
 
     total_packages : int
     matching : int
     matching_prc : str
     mismatching : int
     mismatching_prc : str
-    details : list[StatusDetail]
+    details : list[RequirementDetail]
 
     def __str__(self):
         return str(
@@ -198,6 +200,12 @@ class LambdaCollection():
         '''An adapter around time.sleep().'''
 
         return lambda waiting_time : sleep(cast(float, waiting_time))      
+    @staticmethod
+    def do_nothing_function() -> Callable[[Any], None]:
+
+        '''Does nothing.'''
+
+        return lambda x : None
 class _MessageCollection():
 
     '''Collects all the messages used for logging and for the exceptions.'''
@@ -245,14 +253,17 @@ class _MessageCollection():
     def starting_to_evaluate_status_local_package() -> str:
         return "Now starting to evaluate the status of each local package..."
     @staticmethod
+    def total_estimated_time_will_be(waiting_time : int, local_packages : int) -> str:
+        return f"The total estimated time to complete the whole operation will be: '{str(waiting_time * local_packages)}' seconds."       
+    @staticmethod
     def status_evaluation_operation_successfully_loaded() -> str:
         return "The status evaluation operation has been successfully completed."
     @staticmethod
-    def starting_creation_status_summary() -> str:
-        return "Now starting the creation of a status summary..."
+    def starting_creation_requirement_summary() -> str:
+        return "Now starting the creation of a requirement summary..."
     @staticmethod
-    def status_summary_successfully_created() -> str:
-        return "The status summary has been successfully created."
+    def requirement_summary_successfully_created() -> str:
+        return "The requirement summary has been successfully created."
     @staticmethod
     def status_checking_operation_completed() -> str:
         return "The status checking operation has been completed."       
@@ -260,6 +271,23 @@ class _MessageCollection():
     @staticmethod
     def no_suitable_xml_items_found(url : str) -> str:
         return f"No suitable XML items found in '{url}'. The application is not able to establish the most recent release."
+
+    @staticmethod
+    def __format_version(version : Tuple[int, int, int]) -> str:
+
+        "Converts version to string."
+
+        return f"{version[0]}.{version[1]}.{version[2]}"
+    @staticmethod
+    def installed_python_version_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
+        installed_str : str = _MessageCollection.__format_version(version = installed)
+        required_str : str = _MessageCollection.__format_version(version = required)
+        return f"The installed Python version is matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
+    @staticmethod
+    def installed_python_version_not_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
+        installed_str : str = _MessageCollection.__format_version(version = installed)
+        required_str : str = _MessageCollection.__format_version(version = required)
+        return f"Warning! The installed Python is not matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
 
 # CLASSES
 class LocalPackageLoader():
@@ -649,9 +677,9 @@ class PyPiReleaseFetcher():
         )
 
         return f_session
-class StatusChecker():
+class RequirementChecker():
 
-    '''This class collects all the logic related to package status checking.'''
+    '''This class collects all the logic related to requirement status checking.'''
 
     __package_loader : LocalPackageLoader
     __release_fetcher : PyPiReleaseFetcher
@@ -689,41 +717,41 @@ class StatusChecker():
             description = _MessageCollection.current_version_doesnt_match(current_package, most_recent_release)
 
         return (cast(bool, is_version_matching), cast(str, description))
-    def __create_status_detail(self, current_package : Package, most_recent_release : Release) -> StatusDetail:
+    def __create_requirement_detail(self, current_package : Package, most_recent_release : Release) -> RequirementDetail:
 
-        '''Creates a StatusDetail object out of the provided current_package and most_recent_release.'''
+        '''Creates a RequirementDetail object out of the provided current_package and most_recent_release.'''
 
         is_version_matching, description = self.__compare(
             current_package = current_package, 
             most_recent_release = most_recent_release
         )
 
-        status_detail : StatusDetail = StatusDetail(
+        requirement_detail : RequirementDetail = RequirementDetail(
             current_package = current_package,
             most_recent_release = most_recent_release,
             is_version_matching = is_version_matching,
             description = description
         )
 
-        return status_detail
-    def __create_status_details(self, l_session : LSession, waiting_time : int) -> list[StatusDetail]:
+        return requirement_detail
+    def __create_requirement_details(self, l_session : LSession, waiting_time : int) -> list[RequirementDetail]:
 
-        '''Creates a list of StatusDetail objects out of the provided l_session.'''
+        '''Creates a list of RequirementDetail objects out of the provided l_session.'''
 
-        status_details : list[StatusDetail] = []
+        requirement_details : list[RequirementDetail] = []
         for current_package in l_session.packages:
 
             f_session : FSession = self.__release_fetcher.fetch(package_name = current_package.name)
             
-            status_detail : StatusDetail = self.__create_status_detail(
+            requirement_detail : RequirementDetail = self.__create_requirement_detail(
                 current_package = current_package, 
                 most_recent_release = f_session.most_recent_release
             )
-            status_details.append(status_detail)
+            requirement_details.append(requirement_detail)
 
             self.__sleeping_function(waiting_time)
         
-        return status_details
+        return requirement_details
     def __calculate_prc(self, value : int, total : int) -> str:
 
         '''Calculates % out of provided value and total.'''
@@ -731,40 +759,40 @@ class StatusChecker():
         prc : str = f"{(value / total) * 100:.2f}%"
 
         return prc
-    def __create_status_summary(self, status_details : list[StatusDetail]) -> StatusSummary:
+    def __create_requirement_summary(self, requirement_details : list[RequirementDetail]) -> RequirementSummary:
 
-        '''Creates a StatusSummary object out of the provided status_details.'''
+        '''Creates a RequirementSummary object out of the provided requirement_details.'''
 
-        total_packages : int = len(status_details)
+        total_packages : int = len(requirement_details)
         matching : int = 0
         mismatching : int = 0
 
-        for status_detail in status_details:
+        for requirement_detail in requirement_details:
             
-            if status_detail.is_version_matching == True:
+            if requirement_detail.is_version_matching == True:
                 matching += 1
             else:
                 mismatching += 1
 
-        status_summary : StatusSummary = StatusSummary(
+        requirement_summary : RequirementSummary = RequirementSummary(
             total_packages = total_packages,
             matching = matching,
             matching_prc = self.__calculate_prc(value = matching, total = total_packages),
             mismatching = mismatching,
             mismatching_prc = self.__calculate_prc(value = mismatching, total = total_packages),
-            details = status_details
+            details = requirement_details
         )
 
-        return status_summary
+        return requirement_summary
 
-    def check(self, file_path : str, waiting_time : int = 5) -> StatusSummary:
+    def check(self, file_path : str, waiting_time : int = 5) -> RequirementSummary:
 
         '''
             This method:
             
                 1. loads a list of locally-installed Python packages from file_path
                 2. fetches the latest information about each of them on PyPi.org
-                3. returns a StatusSummary object
+                3. returns a RequirementSummary object
             
             All the steps are logged.
             It raises an Exception if an issue arises.
@@ -783,21 +811,22 @@ class StatusChecker():
         self.__logging_function(_MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages))
         self.__logging_function(_MessageCollection.x_unparsed_lines(l_session.unparsed_lines))
         self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
-
-        status_details : list[StatusDetail] = self.__create_status_details(l_session = l_session, waiting_time = waiting_time)
+        self.__logging_function(_MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)))
+        
+        requirement_details : list[RequirementDetail] = self.__create_requirement_details(l_session = l_session, waiting_time = waiting_time)
 
         self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
-        self.__list_logging_function(self.__logging_function, status_details)
-        self.__logging_function(_MessageCollection.starting_creation_status_summary())
+        self.__list_logging_function(self.__logging_function, requirement_details)
+        self.__logging_function(_MessageCollection.starting_creation_requirement_summary())
 
-        status_summary : StatusSummary = self.__create_status_summary(status_details = status_details)
+        requirement_summary : RequirementSummary = self.__create_requirement_summary(requirement_details = requirement_details)
 
-        self.__logging_function(_MessageCollection.status_summary_successfully_created())
-        self.__logging_function(str(status_summary))
+        self.__logging_function(_MessageCollection.requirement_summary_successfully_created())
+        self.__logging_function(str(requirement_summary))
         self.__logging_function(_MessageCollection.status_checking_operation_completed())
 
-        return status_summary
-    def try_check(self, file_path : str, waiting_time : int = 5) -> Optional[StatusSummary]:
+        return requirement_summary
+    def try_check(self, file_path : str, waiting_time : int = 5) -> Optional[RequirementSummary]:
 
         '''
             It performs the same operations as check().
@@ -813,13 +842,46 @@ class StatusChecker():
             self.__logging_function(str(e))
             
             return None
-    def log_status_summary(self, status_summary : StatusSummary) -> None:
+    def log_requirement_summary(self, requirement_summary : RequirementSummary) -> None:
 
-        '''Logs status_summary by using logging_function and list_logging_function.'''
+        '''Logs requirement_summary by using logging_function and list_logging_function.'''
 
-        self.__logging_function(str(status_summary))
-        self.__list_logging_function(self.__logging_function, status_summary.details)
+        self.__logging_function(str(requirement_summary))
+        self.__list_logging_function(self.__logging_function, requirement_summary.details)
+    def get_default_devcointainer_dockerfile_path(self) -> str:
+        
+        '''
+            This assumes that:
 
+                - the *.py file from which the consumer is calling this method is stored into <root>/src;
+                - the Dockerfile is placed into <root>/.devcontainer folder instead.
+
+            Example:
+
+                os.path.join(os.path.abspath(os.curdir).replace("src", ".devcontainer"), "Dockerfile")
+        '''
+        
+        dockerfile_path : str = os.path.join(
+            os.path.abspath(os.curdir).replace("src", ".devcontainer"), 
+            "Dockerfile"
+        )
+
+        return dockerfile_path
+class LanguageChecker():
+
+    '''Collects all the logic related to Python language checks.'''
+
+    def get_version_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
+
+        '''Returns a warning message if the installed Python version doesn't match the required one.'''
+
+        installed : Tuple[int, int, int] = (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+        
+        if installed == required:
+            return _MessageCollection.installed_python_version_matching(installed = installed, required = required)
+        else:
+            return _MessageCollection.installed_python_version_not_matching(installed = installed, required = required)
+        
 # MAIN
 if __name__ == "__main__":
     pass
