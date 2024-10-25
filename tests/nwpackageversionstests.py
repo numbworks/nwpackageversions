@@ -977,6 +977,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
             _MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages),
             _MessageCollection.x_unparsed_lines(l_session.unparsed_lines),
             _MessageCollection.starting_to_evaluate_status_local_package(),
+            _MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)),            
             _MessageCollection.status_evaluation_operation_successfully_loaded(),
             descriptions[0],
             descriptions[1],
