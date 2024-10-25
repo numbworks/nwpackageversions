@@ -410,6 +410,16 @@ class LambdaCollectionTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(messages, ["1", "2", "3"])
+    def test_donothingfunction_shoulddonothing_wheninvoked(self) -> None:
+        
+        # Arrange
+        do_nothing_function : Callable[[Any], None] = LambdaCollection.do_nothing_function()
+
+        # Act
+        actual : None = do_nothing_function("test")
+
+        # Assert
+        self.assertIsNone(actual)
 class LSessionTestCase(unittest.TestCase):
 
     def setUp(self):
