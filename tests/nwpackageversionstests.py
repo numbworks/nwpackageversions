@@ -845,6 +845,16 @@ class RequirementCheckerTestCase(unittest.TestCase):
             packages = [ self.package1 ],
             unparsed_lines = []
         )
+
+        self.f_session1 : FSession = FSession(
+            package_name = "pandas",
+            most_recent_release = self.release1,
+            releases = [self.release1],
+            xml_items = [
+                XMLItem(title="2.1.2", link="https://pypi.org/project/pandas/2.2.3/", description="", author=None, pubdate=datetime.strptime("Sat, 05 Oct 2024 18:28:18 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sat, 05 Oct 2024 18:28:18 GMT"),
+            ]
+        )
+
         self.requirement_detail1 : RequirementDetail = RequirementDetail(
             current_package = self.package1,
             most_recent_release = self.release1,
@@ -878,7 +888,12 @@ class RequirementCheckerTestCase(unittest.TestCase):
         
         # Arrange
         # Act
-        requirement_checker : RequirementChecker = RequirementChecker()
+        release_fetcher_mock : PyPiReleaseFetcher = Mock()
+        release_fetcher_mock.fetch.return_value = self.f_session1
+
+        requirement_checker : RequirementChecker = RequirementChecker(
+            release_fetcher = release_fetcher_mock
+        )
         actual : list[RequirementDetail] = requirement_checker._RequirementChecker__create_requirement_details(l_session = self.l_session1, waiting_time = 0) # type: ignore
         
         # Assert
