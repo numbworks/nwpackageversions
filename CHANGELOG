@@ -1,5 +1,6 @@
 v1.2.0 - BREAKING CHANGES
 - Library:
+	- Feature: LanguageChecker added.
 	- Refactoring: Status* => Requirement*.
 - Documentation:
 	- Feature: updated to v1.2.0.

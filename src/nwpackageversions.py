@@ -9,6 +9,7 @@ import copy
 import os
 import re
 import requests
+import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
@@ -234,11 +235,6 @@ class _MessageCollection():
     @staticmethod
     def waiting_time_will_be(waiting_time : int) -> str:
         return f"The 'waiting_time' between each fetching request will be: '{str(waiting_time)}' seconds."
-
-    @staticmethod
-    def total_estimated_time_will_be(waiting_time : int, local_packages : int) -> str:
-        return f"The total estimated time to complete the whole operation will be: '{str(waiting_time * local_packages)}' seconds."    
-
     @staticmethod
     def x_local_packages_found_successfully_loaded(packages : list[Package]) -> str:
         return f"'{str(len(packages))}' local packages has been found and successfully loaded."        
@@ -257,6 +253,9 @@ class _MessageCollection():
     def starting_to_evaluate_status_local_package() -> str:
         return "Now starting to evaluate the status of each local package..."
     @staticmethod
+    def total_estimated_time_will_be(waiting_time : int, local_packages : int) -> str:
+        return f"The total estimated time to complete the whole operation will be: '{str(waiting_time * local_packages)}' seconds."       
+    @staticmethod
     def status_evaluation_operation_successfully_loaded() -> str:
         return "The status evaluation operation has been successfully completed."
     @staticmethod
@@ -272,6 +271,23 @@ class _MessageCollection():
     @staticmethod
     def no_suitable_xml_items_found(url : str) -> str:
         return f"No suitable XML items found in '{url}'. The application is not able to establish the most recent release."
+
+    @staticmethod
+    def __format_version(version : Tuple[int, int, int]) -> str:
+
+        "Converts version to string."
+
+        return f"{version[0]}.{version[1]}.{version[2]}"
+    @staticmethod
+    def installed_python_version_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
+        installed_str : str = _MessageCollection.__format_version(version = installed)
+        required_str : str = _MessageCollection.__format_version(version = required)
+        return f"The installed Python version is matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
+    @staticmethod
+    def installed_python_version_not_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
+        installed_str : str = _MessageCollection.__format_version(version = installed)
+        required_str : str = _MessageCollection.__format_version(version = required)
+        return f"Warning! The installed Python is not matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
 
 # CLASSES
 class LocalPackageLoader():
@@ -851,7 +867,21 @@ class RequirementChecker():
         )
 
         return dockerfile_path
+class LanguageChecker():
 
+    '''Collects all the logic related to Python language checks.'''
+
+    def get_version_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
+
+        '''Returns a warning message if the installed Python version doesn't match the required one.'''
+
+        installed : Tuple[int, int, int] = (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+        
+        if installed == required:
+            return _MessageCollection.installed_python_version_matching(installed = installed, required = required)
+        else:
+            return _MessageCollection.installed_python_version_not_matching(installed = installed, required = required)
+        
 # MAIN
 if __name__ == "__main__":
     pass
