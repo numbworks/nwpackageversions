@@ -6,6 +6,7 @@ Alias: nwpv
 
 # GLOBAL MODULES
 import copy
+import os
 import re
 import requests
 import xml.etree.ElementTree as ET
@@ -825,6 +826,25 @@ class RequirementChecker():
 
         self.__logging_function(str(requirement_summary))
         self.__list_logging_function(self.__logging_function, requirement_summary.details)
+    def get_default_devcointainer_dockerfile_path(self) -> str:
+        
+        '''
+            This assumes that:
+
+                - the *.py file from which the consumer is calling this method is stored into <root>/src;
+                - the Dockerfile is placed into <root>/.devcontainer folder instead.
+
+            Example:
+
+                os.path.join(os.path.abspath(os.curdir).replace("src", ".devcontainer"), "Dockerfile")
+        '''
+        
+        dockerfile_path : str = os.path.join(
+            os.path.abspath(os.curdir).replace("src", ".devcontainer"), 
+            "Dockerfile"
+        )
+
+        return dockerfile_path
 
 # MAIN
 if __name__ == "__main__":
