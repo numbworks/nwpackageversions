@@ -255,10 +255,10 @@ class _MessageCollection():
         return "The status evaluation operation has been successfully completed."
     @staticmethod
     def starting_creation_requirement_summary() -> str:
-        return "Now starting the creation of a status summary..."
+        return "Now starting the creation of a requirement summary..."
     @staticmethod
     def requirement_summary_successfully_created() -> str:
-        return "The status summary has been successfully created."
+        return "The requirement summary has been successfully created."
     @staticmethod
     def status_checking_operation_completed() -> str:
         return "The status checking operation has been completed."       
@@ -714,7 +714,7 @@ class RequirementChecker():
         return requirement_detail
     def __create_requirement_details(self, l_session : LSession, waiting_time : int) -> list[RequirementDetail]:
 
-        '''Creates a list of StatusDetail objects out of the provided l_session.'''
+        '''Creates a list of RequirementDetail objects out of the provided l_session.'''
 
         requirement_details : list[RequirementDetail] = []
         for current_package in l_session.packages:
