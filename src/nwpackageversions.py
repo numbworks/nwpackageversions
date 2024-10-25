@@ -234,6 +234,11 @@ class _MessageCollection():
     @staticmethod
     def waiting_time_will_be(waiting_time : int) -> str:
         return f"The 'waiting_time' between each fetching request will be: '{str(waiting_time)}' seconds."
+
+    @staticmethod
+    def total_estimated_time_will_be(waiting_time : int, local_packages : int) -> str:
+        return f"The total estimated time to complete the whole operation will be: '{str(waiting_time * local_packages)}' seconds."    
+
     @staticmethod
     def x_local_packages_found_successfully_loaded(packages : list[Package]) -> str:
         return f"'{str(len(packages))}' local packages has been found and successfully loaded."        
@@ -790,7 +795,8 @@ class RequirementChecker():
         self.__logging_function(_MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages))
         self.__logging_function(_MessageCollection.x_unparsed_lines(l_session.unparsed_lines))
         self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
-
+        self.__logging_function(_MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)))
+        
         requirement_details : list[RequirementDetail] = self.__create_requirement_details(l_session = l_session, waiting_time = waiting_time)
 
         self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
