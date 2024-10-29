@@ -6,12 +6,12 @@ from datetime import datetime
 from parameterized import parameterized
 from requests import Response
 from time import time
-from typing import Any, Optional, Callable, Tuple, cast
+from typing import Any, Literal, Optional, Callable, Tuple, cast
 from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, LanguageChecker
+from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, LanguageChecker
 from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
@@ -816,7 +816,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         # Act, Assert
         with self.assertRaises(expected_exception = Exception, msg = msg):
             release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = get_function_mock)
-            release_fetcher.fetch(package_name = "pandas")
+            release_fetcher.fetch(package_name = "pandas", only_stable_releases = False)
     def test_fetch_shouldreturnexpectedfsession_wheninvoked(self) -> None:
         
         # Arrange
@@ -829,7 +829,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         
         # Act
         release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
-        actual : FSession = release_fetcher.fetch(package_name = "pandas")
+        actual : FSession = release_fetcher.fetch(package_name = "pandas", only_stable_releases = False)
 
         # Assert
         self.assertEqual(actual, expected)
@@ -1113,6 +1113,41 @@ class LanguageCheckerTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(expected, actual)
+class BadgeTestCase(unittest.TestCase):
+    
+    def setUp(self) -> None:
+
+        self.package_name : str = "numpy"
+        self.version : str = "2.1.2alpha"
+        self.label : Literal["pre-release", "yanked"] = "pre-release"
+
+        self.badge : Badge = Badge(package_name = self.package_name, version = self.version, label=self.label)
+    def test_badge_shouldinitializeasexpected_wheninvoked(self) -> None:
+
+        # Arrange
+        # Act
+        # Assert
+        self.assertEqual(self.badge.package_name, self.package_name)
+        self.assertEqual(self.badge.version, self.version)
+        self.assertEqual(self.badge.label, self.label)
+    def test_str_shouldreturnexpectedstring_wheninvoked(self) -> None:
+
+        # Arrange
+        expected : str = str(
+            "{ "
+            f"'package_name': '{self.package_name}', "
+            f"'version': '{self.version}', "
+            f"'label': '{self.label}'"
+            " }"
+        )
+
+        # Act
+        actual_str : str = str(self.badge)
+        actual_repr : str = repr(self.badge)
+
+        # Assert
+        self.assertEqual(actual_str, expected)
+        self.assertEqual(actual_repr, expected)
 
 # Main
 if __name__ == "__main__":
