@@ -576,7 +576,7 @@ class PyPiBadgeFetcher():
         version_pattern : str = "//p[@class='release__version'][span]/text()"
         versions : list[str] = self.__extract_and_strip_text(tree = tree, pattern = version_pattern)
 
-        if len(versions): 
+        if len(versions) == 0: 
             return None
 
         label_pattern : str = "//p[@class='release__version'][span]/span/text()"
@@ -1026,5 +1026,5 @@ class LanguageChecker():
         
 # MAIN
 if __name__ == "__main__":
-    badges = PyPiBadgeFetcher().try_fetch(package_name = "ipykernel")
-    print(badges)
+    fsession = PyPiReleaseFetcher().fetch(package_name = "ipykernel", only_stable_releases = True)
+    print(fsession)
