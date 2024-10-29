@@ -591,13 +591,16 @@ class PyPiReleaseFetcher():
     '''This is a client for PyPi release pages.'''
 
     __get_function : Callable[[str], Response]
+    __badge_fetcher : PyPiBadgeFetcher
 
     def __init__(
             self,
-            get_function : Callable[[str], Response] = LambdaCollection.get_function()
+            get_function : Callable[[str], Response] = LambdaCollection.get_function(),
+            badge_fetcher : PyPiBadgeFetcher = PyPiBadgeFetcher()
             ) -> None:
 
         self.__get_function = get_function
+        self.__badge_fetcher = badge_fetcher
 
     def __format_url(self, package_name : str) -> str:
 
@@ -757,9 +760,41 @@ class PyPiReleaseFetcher():
 
         return most_recent_release
 
-    def fetch(self, package_name : str) -> FSession:
+    def __is_stable_release(self, xml_item : XMLItem, badge_versions : list[str]) -> bool:
 
-        '''Retrieves all the releases from PyPi.org for the provided package_name.'''
+        '''
+            (xml_item.title not in badge_versions) == True => stable
+            (xml_item.title not in badge_versions) == False => unstable
+        '''
+
+        return (xml_item.title not in badge_versions)
+    def __process_stable_releases(self, package_name : str, xml_items_clean : list[XMLItem], only_stable_releases : bool) -> list[XMLItem]:
+
+        '''Encapsulates all the logic related to stable releases.'''
+
+        if only_stable_releases == False:
+            return xml_items_clean
+        
+        badges : Optional[list[Badge]] = self.__badge_fetcher.try_fetch(package_name = package_name)       
+        
+        if badges is None:
+            return xml_items_clean
+
+        badge_versions : list[str] = [badge.version for badge in badges]
+        xml_items_clean = self.__filter(
+            items = xml_items_clean, 
+            function = lambda x : self.__is_stable_release(xml_item = x, badge_versions = badge_versions)
+        )
+
+        return xml_items_clean
+
+    def fetch(self, package_name : str, only_stable_releases : bool) -> FSession:
+
+        '''
+            Retrieves all the releases from PyPi.org for the provided package_name.
+            
+            The "only_stable_releases" flag, if True, will filter out all the releases that have been badged as "pre-release" or "yanked".
+        '''
 
         url : str =  self.__format_url(package_name = package_name)
         response : Response = self.__get_function(url)
@@ -768,7 +803,8 @@ class PyPiReleaseFetcher():
         xml_items_clean : list[XMLItem] = copy.deepcopy(xml_items_raw)
         xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_title(xml_item = x))
         xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_pubdate(xml_item = x))
-        
+        xml_items_clean = self.__process_stable_releases(package_name = package_name, xml_items_clean = xml_items_clean, only_stable_releases = only_stable_releases)
+            
         if len(xml_items_clean) == 0:
             raise Exception(_MessageCollection.no_suitable_xml_items_found(url = url))
 
