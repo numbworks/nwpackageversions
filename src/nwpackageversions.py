@@ -13,10 +13,12 @@ import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
+from lxml import html
+from lxml.html import HtmlElement
 from re import Match, Pattern
 from requests import Response
 from time import sleep
-from typing import Any, Callable, Optional, Tuple, cast
+from typing import Any, Callable, Literal, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
 
 # LOCAL MODULES
@@ -44,6 +46,25 @@ class LSession():
                 f"'unparsed_lines': '{len(self.unparsed_lines)}'"
                 " }"                
             )  
+@dataclass(frozen = True)
+class Badge():
+
+    '''Represents a badge on PyPi.org.'''
+
+    package_name : str
+    version : str
+    label : Literal["pre-release", "yanked"]
+
+    def __str__(self):
+        return str(
+                "{ "
+                f"'package_name': '{self.package_name}', "
+                f"'version': '{self.version}', "
+                f"'label': '{self.label}'"
+                " }"                
+            )
+    def __repr__(self):
+        return self.__str__()
 @dataclass(frozen = True)
 class XMLItem():
 
@@ -480,6 +501,91 @@ class LocalPackageLoader():
             raise Exception(_MessageCollection.no_packages_found(file_path))
 
         return cast(LSession, l_session)
+class PyPiBadgeFetcher():
+
+    '''This is an utility method to retrieve the badges associated to every release.'''
+
+    __get_function : Callable[[str], Response]
+
+    def __init__(
+            self,
+            get_function : Callable[[str], Response] = LambdaCollection.get_function()
+            ) -> None:
+
+        self.__get_function = get_function
+
+    def __format_url(self, package_name : str) -> str:
+
+        '''Returns the URL for the package's #history page.'''
+
+        url : str =  f"https://pypi.org/project/{package_name}/#history"
+
+        return url  
+    def __extract_and_strip_text(self, tree : HtmlElement, pattern : str, remove_empty_items : bool = True) -> list[str]:
+
+        '''
+            Extracts strings from the provided tree using a XPath pattern that ends in "text()".
+            
+            Whitespaces, newlines and tabs are stripped out from each string.
+
+            Optional: empty items are removed from the returned list.
+        '''
+
+        elements : list[HtmlElement] = tree.xpath(pattern)
+        strs : list[str] = [element.strip() for element in elements]
+
+        if remove_empty_items:
+            strs = [str for str in strs if str]
+
+        return strs
+    def __create_badge(self, package_name : str, version : str, label : str) -> Badge:
+
+        '''Creates a Badge object out of the provided arguments.'''
+
+        badge : Badge = Badge(
+            package_name = package_name, 
+            version = version, 
+            label = cast(Literal["pre-release", "yanked"], label)
+        )
+
+        return badge
+    def __create_badges(self, package_name : str, versions_labels : list[Tuple[str, str]]) -> list[Badge]:
+
+        '''Creates a list of Badge objects out of the provided arguments.'''
+
+        badges : list[Badge] = []
+        for tpl in versions_labels:
+            badge : Badge = self.__create_badge(package_name = package_name, version = tpl[0], label = tpl[1])
+            badges.append(badge)
+
+        return badges
+
+    def try_fetch(self, package_name : str) -> Optional[list[Badge]]:
+
+        '''
+            Fetches all the Badges for the provided package_name.
+
+            If no badges are found, None is returned. 
+        '''
+
+        url : str = self.__format_url(package_name = package_name)
+        
+        response : Response = self.__get_function(url)
+        tree : HtmlElement = html.fromstring(response.content)
+
+        version_pattern : str = "//p[@class='release__version'][span]/text()"
+        versions : list[str] = self.__extract_and_strip_text(tree = tree, pattern = version_pattern)
+
+        if len(versions): 
+            return None
+
+        label_pattern : str = "//p[@class='release__version'][span]/span/text()"
+        labels : list[str] = self.__extract_and_strip_text(tree = tree, pattern = label_pattern)
+
+        versions_labels : list[Tuple[str, str]] = list(zip(versions, labels, strict = True))
+        badges : list[Badge] = self.__create_badges(package_name = package_name, versions_labels = versions_labels)
+
+        return badges
 class PyPiReleaseFetcher():
 
     '''This is a client for PyPi release pages.'''
@@ -884,4 +990,5 @@ class LanguageChecker():
         
 # MAIN
 if __name__ == "__main__":
-    pass
+    badges = PyPiBadgeFetcher().try_fetch(package_name = "ipykernel")
+    print(badges)
