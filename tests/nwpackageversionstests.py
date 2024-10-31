@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, LanguageChecker
+from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, LanguageChecker, PyPiBadgeFetcher
 from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
@@ -788,20 +788,16 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
             Release(package_name = "pandas", version = "2.2.2", date = datetime(2024, 4, 10, 19, 44, 10))
         ]
     
-    @parameterized.expand([
-        ["Fri, 20 Sep 2024 13:08:42 GMT", datetime(2024, 9, 20, 13, 8, 42)],
-        [None, None]
-    ])
-    def test_parsepubdatestr_shouldreturndatetimeornone_wheninvoked(self, pubdate_str : Optional[str], expected : Optional[datetime]) -> None:
+    def test_pypireleasefetcher_shouldinitializeasexpected_wheninvoked(self) -> None:
         
-        # Arrange      
+        # Arrange
         # Act
-        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
-        actual : Optional[datetime] = release_fetcher._PyPiReleaseFetcher__parse_pubdate_str(pubdate_str) # type: ignore
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher()
 
         # Assert
-        self.assertEqual(actual, expected)
-    
+        self.assertIsInstance(release_fetcher, PyPiReleaseFetcher)
+        self.assertTrue(callable(release_fetcher._PyPiReleaseFetcher__get_function))                    # type: ignore
+        self.assertIsInstance(release_fetcher._PyPiReleaseFetcher__badge_fetcher, PyPiBadgeFetcher)     # type: ignore
     def test_fetch_shouldraiseexception_whenxmlitemsarezero(self) -> None:
         
         # Arrange
@@ -830,6 +826,20 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         # Act
         release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
         actual : FSession = release_fetcher.fetch(package_name = "pandas", only_stable_releases = False)
+
+        # Assert
+        self.assertEqual(actual, expected)
+
+    @parameterized.expand([
+        ["Fri, 20 Sep 2024 13:08:42 GMT", datetime(2024, 9, 20, 13, 8, 42)],
+        [None, None]
+    ])
+    def test_parsepubdatestr_shouldreturndatetimeornone_wheninvoked(self, pubdate_str : Optional[str], expected : Optional[datetime]) -> None:
+        
+        # Arrange      
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
+        actual : Optional[datetime] = release_fetcher._PyPiReleaseFetcher__parse_pubdate_str(pubdate_str) # type: ignore
 
         # Assert
         self.assertEqual(actual, expected)
