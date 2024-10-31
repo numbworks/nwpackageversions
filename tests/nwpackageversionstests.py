@@ -158,11 +158,8 @@ class XMLItemTestCase(unittest.TestCase):
         self.author : Optional[str] = "stephen@hotmail.com"
         self.pubdate : Optional[datetime] = datetime(2024, 10, 5, 18, 28, 18)
         self.pubdate_str : Optional[str] = "Sat, 05 Oct 2024 18:28:18 GMT"
-    def test_xmlitem_shouldinitializeasexpected_wheninvoked(self) -> None:
-        
-        # Arrange
-        # Act
-        xml_item : XMLItem = XMLItem(
+
+        self.xml_item : XMLItem = XMLItem(
             title = self.title,
             link = self.link,
             description = self.description,
@@ -170,14 +167,17 @@ class XMLItemTestCase(unittest.TestCase):
             pubdate = self.pubdate,
             pubdate_str = self.pubdate_str
         )
-
+    def test_xmlitem_shouldinitializeasexpected_wheninvoked(self) -> None:
+        
+        # Arrange
+        # Act
         # Assert
-        self.assertEqual(xml_item.title, self.title)
-        self.assertEqual(xml_item.link, self.link)
-        self.assertEqual(xml_item.description, self.description)
-        self.assertEqual(xml_item.author, self.author)
-        self.assertEqual(xml_item.pubdate, self.pubdate)
-        self.assertEqual(xml_item.pubdate_str, self.pubdate_str)
+        self.assertEqual(self.xml_item.title, self.title)
+        self.assertEqual(self.xml_item.link, self.link)
+        self.assertEqual(self.xml_item.description, self.description)
+        self.assertEqual(self.xml_item.author, self.author)
+        self.assertEqual(self.xml_item.pubdate, self.pubdate)
+        self.assertEqual(self.xml_item.pubdate_str, self.pubdate_str)
     def test_xmlitem_shouldreturnexpectedstring_whenargumentsarenotnone(self):
         
 		# Arrange
@@ -189,17 +189,9 @@ class XMLItemTestCase(unittest.TestCase):
             "'pubdate_str': 'Sat, 05 Oct 2024 18:28:18 GMT' }"
         )
         
-        # Act
-        xml_item : XMLItem = XMLItem(
-            title = self.title,
-            link = self.link,
-            description = self.description,
-            author = self.author,
-            pubdate = self.pubdate,
-            pubdate_str = self.pubdate_str
-        )		
-        actual_str : str = str(xml_item)
-        actual_repr : str = repr(xml_item)
+        # Act	
+        actual_str : str = str(self.xml_item)
+        actual_repr : str = repr(self.xml_item)
         
         # Assert
         self.assertEqual(actual_str, expected)
