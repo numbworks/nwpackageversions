@@ -501,28 +501,28 @@ class RequirementSummaryTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         
-        self.package1 : Package = Package(name = "black", version = "22.12.0")
-        self.release1 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 5, 15))
-        self.is_version_matching1 : bool = True
-        self.description1 : str = "The current version matches the most recent release."
+        self.package_1 : Package = Package(name = "black", version = "22.12.0")
+        self.release_1 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 5, 15))
+        self.is_version_matching_1 : bool = True
+        self.description_1 : str = "The current version matches the most recent release."
 		
-        self.requirement_detail1 : RequirementDetail = RequirementDetail(
-            current_package = self.package1,
-            most_recent_release = self.release1,
-            is_version_matching = self.is_version_matching1,
-            description = self.description1
+        self.requirement_detail_1 : RequirementDetail = RequirementDetail(
+            current_package = self.package_1,
+            most_recent_release = self.release_1,
+            is_version_matching = self.is_version_matching_1,
+            description = self.description_1
         )
         
-        self.package2 : Package = Package(name = "opencv-python", version = "4.5.0")
-        self.release2 : Release = Release(package_name = "opencv-python", version = "4.10.0", date = datetime(2023, 8, 12))
-        self.is_version_matching2 : bool = False
-        self.description2 : str = "The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12')."
+        self.package_2 : Package = Package(name = "opencv-python", version = "4.5.0")
+        self.release_2 : Release = Release(package_name = "opencv-python", version = "4.10.0", date = datetime(2023, 8, 12))
+        self.is_version_matching_2 : bool = False
+        self.description_2 : str = "The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12')."
 		
         self.requirement_detail2 : RequirementDetail = RequirementDetail(
-            current_package = self.package2,
-            most_recent_release = self.release2,
-            is_version_matching = self.is_version_matching2,
-            description = self.description2
+            current_package = self.package_2,
+            most_recent_release = self.release_2,
+            is_version_matching = self.is_version_matching_2,
+            description = self.description_2
         )
 
         self.total_packages : int = 2
@@ -531,50 +531,41 @@ class RequirementSummaryTestCase(unittest.TestCase):
         self.mismatching : int = 1
         self.mismatching_prc : str = "50.00%"
         self.details : list[RequirementDetail] = [
-			self.requirement_detail1, 
+			self.requirement_detail_1, 
 			self.requirement_detail2
 		]
 
         self.expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
-    def test_requirementsummary_shouldinitializeasexpected_wheninvoked(self) -> None:
-	
-        # Arrange
-        # Act
-        requirement_summary : RequirementSummary = RequirementSummary(
+    
+        self.requirement_summary : RequirementSummary = RequirementSummary(
             total_packages = self.total_packages,
             matching = self.matching,
             matching_prc = self.matching_prc,
             mismatching = self.mismatching,
             mismatching_prc = self.mismatching_prc,
             details = self.details
-        )
-
+        )    
+    def test_requirementsummary_shouldinitializeasexpected_wheninvoked(self) -> None:
+	
+        # Arrange
+        # Act
         # Assert
-        self.assertEqual(requirement_summary.total_packages, self.total_packages)
-        self.assertEqual(requirement_summary.matching, self.matching)
-        self.assertEqual(requirement_summary.matching_prc, self.matching_prc)
-        self.assertEqual(requirement_summary.mismatching, self.mismatching)
-        self.assertEqual(requirement_summary.mismatching_prc, self.mismatching_prc)
-        self.assertEqual(len(requirement_summary.details), len(self.details))
+        self.assertEqual(self.requirement_summary.total_packages, self.total_packages)
+        self.assertEqual(self.requirement_summary.matching, self.matching)
+        self.assertEqual(self.requirement_summary.matching_prc, self.matching_prc)
+        self.assertEqual(self.requirement_summary.mismatching, self.mismatching)
+        self.assertEqual(self.requirement_summary.mismatching_prc, self.mismatching_prc)
+        self.assertEqual(len(self.requirement_summary.details), len(self.details))
         self.assertTrue(
             SupportMethodProvider.are_lists_of_requirementdetails_equal(
-                list1 = requirement_summary.details,
+                list1 = self.requirement_summary.details,
                 list2 = self.details
             ))
     def test_requirementsummary_shouldreturnexpectedstring_wheninvoked(self) -> None:
         
 		# Arrange
-        requirement_summary : RequirementSummary = RequirementSummary(
-            total_packages = self.total_packages,
-            matching = self.matching,
-            matching_prc = self.matching_prc,
-            mismatching = self.mismatching,
-            mismatching_prc = self.mismatching_prc,
-            details = self.details
-        )
-
         # Act
-        actual : str = str(requirement_summary)
+        actual : str = str(self.requirement_summary)
 
         # Assert
         self.assertEqual(actual, self.expected) 
