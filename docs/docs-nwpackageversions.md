@@ -8,6 +8,7 @@ Contact: numbworks@gmail.com
 | 2024-10-07 | numbworks | Created. |
 | 2024-10-22 | numbworks | Updated to v1.1.0. |
 | 2024-10-24 | numbworks | Updated to v1.2.0. |
+| 2024-10-31 | numbworks | Updated to v1.6.0. |
 
 ## Introduction
 
