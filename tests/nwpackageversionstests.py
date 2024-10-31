@@ -452,52 +452,51 @@ class RequirementDetailTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
 
-        self.package1 : Package = Package(name = "requests", version = "2.26.0")
-        self.release1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2023, 10, 5))
-        self.is_version_matching1 : bool = True
-        self.description1 : str = "The current version matches the most recent release."
+        self.package_1 : Package = Package(name = "requests", version = "2.26.0")
+        self.release_1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2023, 10, 5))
+        self.is_version_matching_1 : bool = True
+        self.description_1 : str = "The current version matches the most recent release."
 
-        self.package2 : Package = Package(name = "numpy", version = "1.26.3")
-        self.release2 : Release = Release(package_name = "numpy", version = "2.1.2", date = datetime(2024, 10, 5))
-        self.is_version_matching2 : bool = False
-        self.description2 : str = (
+        self.package_2 : Package = Package(name = "numpy", version = "1.26.3")
+        self.release_2 : Release = Release(package_name = "numpy", version = "2.1.2", date = datetime(2024, 10, 5))
+        self.is_version_matching_2 : bool = False
+        self.description_2 : str = (
             "The current version ('1.26.3') of 'numpy' doesn't match with the most recent release "
             "('2.1.2', '2024-10-05')."
         )
-        self.expected2 : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
+        self.expected_2 : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
+
+        self.requirement_detail_1 : RequirementDetail = RequirementDetail(
+            current_package = self.package_1,
+            most_recent_release = self.release_1,
+            is_version_matching = self.is_version_matching_1,
+            description = self.description_1
+        )
+        self.requirement_detail_2 : RequirementDetail = RequirementDetail(
+            current_package = self.package_2,
+            most_recent_release = self.release_2,
+            is_version_matching = self.is_version_matching_2,
+            description = self.description_2
+        )    
     def test_requirementdetail_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
         # Act
-        requirement_detail : RequirementDetail = RequirementDetail(
-            current_package = self.package1,
-            most_recent_release = self.release1,
-            is_version_matching = self.is_version_matching1,
-            description = self.description1
-        )
-
         # Assert
-        self.assertEqual(requirement_detail.current_package, self.package1)
-        self.assertEqual(requirement_detail.most_recent_release, self.release1)
-        self.assertTrue(requirement_detail.is_version_matching)
-        self.assertEqual(requirement_detail.description, self.description1)
+        self.assertEqual(self.requirement_detail_1.current_package, self.package_1)
+        self.assertEqual(self.requirement_detail_1.most_recent_release, self.release_1)
+        self.assertTrue(self.requirement_detail_1.is_version_matching)
+        self.assertEqual(self.requirement_detail_1.description, self.description_1)
     def test_requirementdetail_shouldreturnexpectedstring_wheninvoked(self) -> None:
         
 		# Arrange
-        requirement_detail : RequirementDetail = RequirementDetail(
-            current_package = self.package2,
-            most_recent_release = self.release2,
-            is_version_matching = self.is_version_matching2,
-            description = self.description2
-        )
-
         # Act
-        actual_str : str = str(requirement_detail)
-        actual_repr : str = requirement_detail.__repr__()
+        actual_str : str = str(self.requirement_detail_2)
+        actual_repr : str = self.requirement_detail_2.__repr__()
 
         # Assert
-        self.assertEqual(actual_str, self.expected2)
-        self.assertEqual(actual_repr, self.expected2)
+        self.assertEqual(actual_str, self.expected_2)
+        self.assertEqual(actual_repr, self.expected_2)
 class RequirementSummaryTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
