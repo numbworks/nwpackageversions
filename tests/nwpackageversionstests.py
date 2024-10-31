@@ -282,24 +282,24 @@ class FSessionTestCase(unittest.TestCase):
             XMLItem(title="2.0.2", link="https://pypi.org/project/numpy/2.0.2/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Mon, 26 Aug 2024 20:04:14 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Mon, 26 Aug 2024 20:04:14 GMT"),
             XMLItem(title="2.1.0", link="https://pypi.org/project/numpy/2.1.0/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Sun, 18 Aug 2024 21:39:07 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sun, 18 Aug 2024 21:39:07 GMT")
         ]
-    def test_fsession_shouldinitializeasexpected_wheninvoked(self):
-	
-		# Arrange
-        # Act
-        f_session : FSession = FSession(
+
+        self.f_session : FSession = FSession(
             package_name = self.package_name,
             most_recent_release = self.most_recent_release,
             releases = self.releases,
             xml_items = self.xml_items
         )
-		
+    def test_fsession_shouldinitializeasexpected_wheninvoked(self):
+	
+		# Arrange
+        # Act	
 		# Assert
-        self.assertEqual(f_session.package_name, self.package_name)
-        self.assertEqual(f_session.most_recent_release.package_name, self.most_recent_release.package_name)
-        self.assertEqual(f_session.most_recent_release.version, self.most_recent_release.version)
-        self.assertEqual(f_session.most_recent_release.date, self.most_recent_release.date)
-        self.assertEqual(f_session.releases, self.releases)
-        self.assertEqual(f_session.xml_items, self.xml_items)
+        self.assertEqual(self.f_session.package_name, self.package_name)
+        self.assertEqual(self.f_session.most_recent_release.package_name, self.most_recent_release.package_name)
+        self.assertEqual(self.f_session.most_recent_release.version, self.most_recent_release.version)
+        self.assertEqual(self.f_session.most_recent_release.date, self.most_recent_release.date)
+        self.assertEqual(self.f_session.releases, self.releases)
+        self.assertEqual(self.f_session.xml_items, self.xml_items)
     def test_fsession_shouldreturnexpectedstring_whenargumentsarenotnone(self):
         
 		# Arrange
@@ -311,13 +311,7 @@ class FSessionTestCase(unittest.TestCase):
         )		
 		
         # Act
-        f_session : FSession = FSession(
-            package_name = self.package_name,
-            most_recent_release = self.most_recent_release,
-            releases = self.releases,
-            xml_items = self.xml_items
-        )
-        actual : str = str(f_session)
+        actual : str = str(self.f_session)
 
         # Assert
         self.assertEqual(actual, expected)
