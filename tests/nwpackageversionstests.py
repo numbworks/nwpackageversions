@@ -418,22 +418,21 @@ class LSessionTestCase(unittest.TestCase):
             "    && dpkg -i pandoc-3.4-1-amd64.deb \\", 
             "    && rm -f pandoc-3.4-1-amd64.deb"
         ]
+        self.l_session : LSession = LSession(
+            packages = self.packages,
+            unparsed_lines = self.unparsed_lines
+        )        
     def test_lsession_shouldinitializeasexpected_wheninvoked(self):
 	
 		# Arrange
         # Act
-        l_session : LSession = LSession(
-            packages = self.packages,
-            unparsed_lines = self.unparsed_lines
-        )
-		
 		# Assert
         self.assertTrue(
             SupportMethodProvider.are_lists_of_packages_equal(
-                list1 = l_session.packages,
+                list1 = self.l_session.packages,
                 list2 = self.packages
             ))
-        self.assertEqual(l_session.unparsed_lines, self.unparsed_lines)
+        self.assertEqual(self.l_session.unparsed_lines, self.unparsed_lines)
     def test_lsession_shouldreturnexpectedstring_wheninvoked(self):
         
 		# Arrange
@@ -445,11 +444,7 @@ class LSessionTestCase(unittest.TestCase):
             )		
 		
         # Act
-        l_session : LSession = LSession(
-            packages = self.packages,
-            unparsed_lines = self.unparsed_lines
-        )
-        actual : str = str(l_session)
+        actual : str = str(self.l_session)
 
         # Assert
         self.assertEqual(actual, expected)
