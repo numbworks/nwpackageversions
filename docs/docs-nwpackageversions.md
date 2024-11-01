@@ -184,6 +184,27 @@ C:\Users\Rubèn\src\nwpackageversions\src\
 1. [Dockerfile](ExampleFiles/Dockerfile)
 2. [releases.xml](ExampleFiles/releases.xml)
 3. [requirements.txt](ExampleFiles/requirements.txt)
+4. [history.html](ExampleFiles/history.html)
+
+## Disclaimer
+
+This software includes a RSS reader for PyPi.org. Due of the lack of a badge-related field in the RSS feed, which are necessary to discern stable releases from the others ("pre-release", "yanked"), a minimal web scraping functionality has been added in order to retrieve the badge from the release history page (https://pypi.org/project/<package_name>/#history). 
+
+At the moment of writing, the three legal pages related to PyPi.org do not prohibit web scraping:
+
+- [Acceptable Use Policy](https://policies.python.org/pypi.org/Acceptable-Use-Policy/)
+- [Code of Conduct](https://policies.python.org/pypi.org/Code-of-Conduct/)
+- [Terms of Use](https://policies.python.org/pypi.org/Terms-of-Use/) 
+
+For clarity, I am providing HTML snapshots as of today:
+
+- [Acceptable Use Policy (August 8, 2024)](Legal/Acceptable_Use_Policy.html)
+- [Code of Conduct (August 8, 2024)](Legal/Code_of_Conduct.html)
+- [Terms of Use (July 2, 2024)](Legal/Terms_of_Use.html)
+
+This functionality has been gracefully implemented, adopting a minimum waiting_time of five seconds for each GET request to not overload the servers, and it's disabled by default. 
+
+The functionality is clearly explained in this documentation file, and users must actively enable it, assuming full responsibility for its fair use. The developer cannot be held responsible for any eventual improper use of this software.
 
 ## Markdown Toolset
 
