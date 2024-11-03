@@ -188,7 +188,7 @@ C:\Users\Rubèn\src\nwpackageversions\src\
 
 ## Disclaimer
 
-This software includes a RSS reader for PyPi.org. Due of the lack of a badge-related field in the RSS feed, which are necessary to discern stable releases from the others ("pre-release", "yanked"), a minimal web scraping functionality has been added in order to retrieve the badge from the release history page (https://pypi.org/project/<package_name>/#history). 
+This software includes a RSS reader for PyPi.org. Due of the lack of a badge-related field in the RSS feed, which are necessary to discern stable releases from the others ("pre-release", "yanked"), a minimal web scraping functionality has been added in order to retrieve the badge from the release history page (```https://pypi.org/project/<package_name>/#history```).
 
 At the moment of writing, the three legal pages related to PyPi.org do not prohibit web scraping:
 
