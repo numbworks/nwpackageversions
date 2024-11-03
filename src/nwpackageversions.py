@@ -881,14 +881,14 @@ class RequirementChecker():
         )
 
         return requirement_detail
-    def __create_requirement_details(self, l_session : LSession, waiting_time : int) -> list[RequirementDetail]:
+    def __create_requirement_details(self, l_session : LSession, only_stable_releases : bool, waiting_time : int) -> list[RequirementDetail]:
 
         '''Creates a list of RequirementDetail objects out of the provided l_session.'''
 
         requirement_details : list[RequirementDetail] = []
         for current_package in l_session.packages:
 
-            f_session : FSession = self.__release_fetcher.fetch(package_name = current_package.name)
+            f_session : FSession = self.__release_fetcher.fetch(package_name = current_package.name, only_stable_releases = only_stable_releases)
             
             requirement_detail : RequirementDetail = self.__create_requirement_detail(
                 current_package = current_package, 
@@ -932,7 +932,7 @@ class RequirementChecker():
 
         return requirement_summary
 
-    def check(self, file_path : str, waiting_time : int = 5) -> RequirementSummary:
+    def check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> RequirementSummary:
 
         '''
             This method:
@@ -960,7 +960,11 @@ class RequirementChecker():
         self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
         self.__logging_function(_MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)))
         
-        requirement_details : list[RequirementDetail] = self.__create_requirement_details(l_session = l_session, waiting_time = waiting_time)
+        requirement_details : list[RequirementDetail] = self.__create_requirement_details(
+            l_session = l_session, 
+            waiting_time = waiting_time, 
+            only_stable_releases = only_stable_releases
+        )
 
         self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
         self.__list_logging_function(self.__logging_function, requirement_details)
@@ -973,7 +977,7 @@ class RequirementChecker():
         self.__logging_function(_MessageCollection.status_checking_operation_completed())
 
         return requirement_summary
-    def try_check(self, file_path : str, waiting_time : int = 5) -> Optional[RequirementSummary]:
+    def try_check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> Optional[RequirementSummary]:
 
         '''
             It performs the same operations as check().
@@ -982,7 +986,7 @@ class RequirementChecker():
 
         try:
             
-            return self.check(file_path = file_path, waiting_time = waiting_time)
+            return self.check(file_path = file_path, only_stable_releases = only_stable_releases, waiting_time = waiting_time)
 
         except Exception as e:
 

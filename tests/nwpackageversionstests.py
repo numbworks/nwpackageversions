@@ -989,7 +989,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         requirement_checker : RequirementChecker = RequirementChecker(
             release_fetcher = release_fetcher_mock
         )
-        actual : list[RequirementDetail] = requirement_checker._RequirementChecker__create_requirement_details(l_session = self.l_session1, waiting_time = 0) # type: ignore
+        actual : list[RequirementDetail] = requirement_checker._RequirementChecker__create_requirement_details(l_session = self.l_session1, only_stable_releases = False, waiting_time = 0) # type: ignore
         
         # Assert
         self.assertTrue(
@@ -1009,7 +1009,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         actual : str = requirement_checker._RequirementChecker__calculate_prc(value = value, total = total) # type: ignore
         
         # Assert
-        self.assertEqual(actual, expected)
+        self.assertEqual(actual, expected)  
     def test_check_shouldraiseexpectedexceptionandmessage_whenwaitingtimelessthanminimum(self):
         
         # Arrange
@@ -1047,6 +1047,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         sleeping_function_mock : Callable[[int], None] = lambda x : None
 
         file_path : str = r"C:/Dockerfile"
+        only_stable_releases : bool = False
         waiting_time : int = 5
 
         descriptions : list[str] = [
@@ -1091,7 +1092,11 @@ class RequirementCheckerTestCase(unittest.TestCase):
             sleeping_function = sleeping_function_mock
 
         )
-        actual : RequirementSummary = requirement_checker.check(file_path = file_path, waiting_time = waiting_time)
+        actual : RequirementSummary = requirement_checker.check(
+            file_path = file_path, 
+            only_stable_releases = only_stable_releases, 
+            waiting_time = waiting_time
+        )
 
         # Assert
         self.assertEqual(actual.total_packages, expected.total_packages)
@@ -1104,6 +1109,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         
         # Arrange
         file_path : str = r"C:/Dockerfile"
+        only_stable_releases : bool = False
         waiting_time : int = 2
         minimum_wt : int = 5
         expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
@@ -1120,7 +1126,11 @@ class RequirementCheckerTestCase(unittest.TestCase):
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        requirement_summary : Optional[RequirementSummary] = requirement_checker.try_check(file_path = file_path, waiting_time = waiting_time)
+        requirement_summary : Optional[RequirementSummary] = requirement_checker.try_check(
+            file_path = file_path, 
+            only_stable_releases = only_stable_releases, 
+            waiting_time = waiting_time
+        )
         
         # Assert
         self.assertIsNone(requirement_summary)
