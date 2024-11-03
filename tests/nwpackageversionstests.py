@@ -127,6 +127,36 @@ class SupportMethodProvider():
             )
 
     @staticmethod
+    def are_badges_equal(b1 : Badge, b2 : Badge) -> bool:
+
+        '''Returns True if all the fields of the two objects contain the same values.'''
+
+        return (
+            b1.package_name == b2.package_name and
+            b1.version == b2.version and
+            b1.label == b2.label
+        )
+    @staticmethod
+    def are_lists_of_badges_equal(list1 : Optional[list[Badge]], list2 : Optional[list[Badge]]) -> bool:
+
+        '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
+
+        if list1 is None and list2 is not None:
+            return False
+        
+        if list1 is not None and list2 is None:
+            return False
+        
+        if list1 is None and list2 is None:
+            return True
+
+        return SupportMethodProvider.__are_lists_equal(
+                list1 = cast(list[Badge], list1), 
+                list2 = cast(list[Badge], list2), 
+                comparer = lambda b1, b2 : SupportMethodProvider.are_badges_equal(b1, b2)
+            )
+
+    @staticmethod
     def are_lsessions_equal(ls1 : LSession, ls2 : LSession) -> bool:
 
         '''Returns True if all the fields of the two objects contain the same values.'''
@@ -144,7 +174,8 @@ class SupportMethodProvider():
             fs1.package_name == fs2.package_name and
             SupportMethodProvider.are_releases_equal(fs1.most_recent_release, fs2.most_recent_release) and
             SupportMethodProvider.are_lists_of_releases_equal(fs1.releases, fs2.releases) and
-            SupportMethodProvider.are_lists_of_xmlitems_equal(fs1.xml_items, fs2.xml_items)
+            SupportMethodProvider.are_lists_of_xmlitems_equal(fs1.xml_items, fs2.xml_items) and 
+            SupportMethodProvider.are_lists_of_badges_equal(fs1.badges, fs2.badges)
             )
 
 # TEST CLASSES
