@@ -198,6 +198,7 @@ class XMLItemTestCase(unittest.TestCase):
             pubdate = self.pubdate,
             pubdate_str = self.pubdate_str
         )
+
     def test_xmlitem_shouldinitializeasexpected_wheninvoked(self) -> None:
         
         # Arrange
@@ -266,6 +267,7 @@ class ReleaseTestCase(unittest.TestCase):
 			version = self.version, 
 			date = self.date
 		)
+
     def test_release_shouldinitializeasexpected_wheninvoked(self) -> None:
         
 		# Arrange       
@@ -327,6 +329,7 @@ class FSessionTestCase(unittest.TestCase):
             xml_items = self.xml_items,
             badges = self.badges
         )
+
     def test_fsession_shouldinitializeasexpected_wheninvoked(self):
 	
 		# Arrange
@@ -487,6 +490,7 @@ class LSessionTestCase(unittest.TestCase):
             packages = self.packages,
             unparsed_lines = self.unparsed_lines
         )        
+
     def test_lsession_shouldinitializeasexpected_wheninvoked(self):
 	
 		# Arrange
@@ -543,6 +547,7 @@ class RequirementDetailTestCase(unittest.TestCase):
             is_version_matching = self.is_version_matching_2,
             description = self.description_2
         )    
+
     def test_requirementdetail_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
@@ -610,6 +615,7 @@ class RequirementSummaryTestCase(unittest.TestCase):
             mismatching_prc = self.mismatching_prc,
             details = self.details
         )    
+
     def test_requirementsummary_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
@@ -818,7 +824,15 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
             Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42)),
             Release(package_name = "pandas", version = "2.2.2", date = datetime(2024, 4, 10, 19, 44, 10))
         ]
+
+        self.badges : list[Badge] = [
+            Badge(package_name = "numpy", version = "2.2.3alpha", label = "pre-release"),
+            Badge(package_name = "numpy", version = "2.2.2d0", label = "yanked")
+        ]
     
+        self.badge_fetcher_mock : PyPiBadgeFetcher = Mock()
+        self.badge_fetcher_mock.try_fetch.return_value = self.badges
+
     def test_pypireleasefetcher_shouldinitializeasexpected_wheninvoked(self) -> None:
         
         # Arrange
@@ -844,7 +858,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         with self.assertRaises(expected_exception = Exception, msg = msg):
             release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = get_function_mock)
             release_fetcher.fetch(package_name = "pandas", only_stable_releases = False)
-    def test_fetch_shouldreturnexpectedfsession_wheninvoked(self) -> None:
+    def test_fetch_shouldreturnexpectedfsession_whenonlystablereleasesisfalse(self) -> None:
         
         # Arrange
         expected : FSession = FSession(
@@ -858,6 +872,23 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         # Act
         release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
         actual : FSession = release_fetcher.fetch(package_name = "pandas", only_stable_releases = False)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_fetch_shouldreturnexpectedfsession_whenonlystablereleasesistrue(self) -> None:
+        
+        # Arrange
+        expected : FSession = FSession(
+            package_name = "pandas",
+            most_recent_release = self.releases[0],
+            releases = self.releases,
+            xml_items = self.xml_items,
+            badges = self.badges
+        )
+        
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock, badge_fetcher = self.badge_fetcher_mock)
+        actual : FSession = release_fetcher.fetch(package_name = "pandas", only_stable_releases = True)
 
         # Assert
         self.assertEqual(actual, expected)
@@ -909,6 +940,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         self.package2 : Package = Package(name = "pandas", version = "2.2.2")
         self.release2 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
         self.expected_tpl2 : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(self.package2, self.release2))
+
     def test_requirementchecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
         
         # Arrange
@@ -1165,6 +1197,7 @@ class BadgeTestCase(unittest.TestCase):
         self.label : Literal["pre-release", "yanked"] = "pre-release"
 
         self.badge : Badge = Badge(package_name = self.package_name, version = self.version, label = self.label)
+
     def test_badge_shouldinitializeasexpected_wheninvoked(self) -> None:
 
         # Arrange
