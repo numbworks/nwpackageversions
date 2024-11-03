@@ -1260,7 +1260,14 @@ class PyPiBadgeFetcherTestCase(unittest.TestCase):
     def setUp(self) -> None:
 
         self.badge_fetcher : PyPiBadgeFetcher = PyPiBadgeFetcher()
-
+    
+    def test_pypibadgefetcher_shouldinitializeasexpected_wheninvoked(self) -> None:
+        
+        # Arrange
+        # Act
+        # Assert
+        self.assertIsInstance(self.badge_fetcher, PyPiBadgeFetcher)
+        self.assertTrue(callable(self.badge_fetcher._PyPiBadgeFetcher__get_function))                    # type: ignore
     def test_formaturl_shouldreturnexpectedurl_wheninvoked(self) -> None:
 
         # Arrange
