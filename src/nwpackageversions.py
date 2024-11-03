@@ -280,6 +280,10 @@ class _MessageCollection():
     def total_estimated_time_will_be(waiting_time : int, local_packages : int) -> str:
         return f"The total estimated time to complete the whole operation will be: '{str(waiting_time * local_packages)}' seconds."       
     @staticmethod
+    def only_stable_releases_is(only_stable_releases : bool) -> str:
+        return f"'only_stable_releases' is: '{str(only_stable_releases)}'."
+    
+    @staticmethod
     def status_evaluation_operation_successfully_loaded() -> str:
         return "The status evaluation operation has been successfully completed."
     @staticmethod
@@ -959,6 +963,7 @@ class RequirementChecker():
         self.__logging_function(_MessageCollection.x_unparsed_lines(l_session.unparsed_lines))
         self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
         self.__logging_function(_MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)))
+        self.__logging_function(_MessageCollection.only_stable_releases_is(only_stable_releases))
         
         requirement_details : list[RequirementDetail] = self.__create_requirement_details(
             l_session = l_session, 
@@ -1035,5 +1040,4 @@ class LanguageChecker():
         
 # MAIN
 if __name__ == "__main__":
-    fsession = PyPiReleaseFetcher().fetch(package_name = "ipykernel", only_stable_releases = True)
-    print(fsession)
+    pass
