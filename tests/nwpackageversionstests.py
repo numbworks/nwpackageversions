@@ -3,8 +3,6 @@ import os
 import sys
 import unittest
 from datetime import datetime
-from lxml import html
-from lxml.html import HtmlElement
 from parameterized import parameterized
 from requests import Response
 from time import time
@@ -1338,7 +1336,7 @@ class PyPiBadgeFetcherTestCase(unittest.TestCase):
         # Act
         # Assert
         self.assertIsInstance(self.badge_fetcher, PyPiBadgeFetcher)
-        self.assertTrue(callable(self.badge_fetcher._PyPiBadgeFetcher__get_function))                    # type: ignore
+        self.assertTrue(callable(self.badge_fetcher._PyPiBadgeFetcher__get_function))   # type: ignore
     def test_formaturl_shouldreturnexpectedurl_wheninvoked(self) -> None:
 
         # Arrange
