@@ -13,10 +13,12 @@ import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
+from lxml import html
+from lxml.html import HtmlElement
 from re import Match, Pattern
 from requests import Response
 from time import sleep
-from typing import Any, Callable, Optional, Tuple, cast
+from typing import Any, Callable, Literal, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
 
 # LOCAL MODULES
@@ -44,6 +46,25 @@ class LSession():
                 f"'unparsed_lines': '{len(self.unparsed_lines)}'"
                 " }"                
             )  
+@dataclass(frozen = True)
+class Badge():
+
+    '''Represents a badge on PyPi.org.'''
+
+    package_name : str
+    version : str
+    label : Literal["pre-release", "yanked"]
+
+    def __str__(self):
+        return str(
+                "{ "
+                f"'package_name': '{self.package_name}', "
+                f"'version': '{self.version}', "
+                f"'label': '{self.label}'"
+                " }"                
+            )
+    def __repr__(self):
+        return self.__str__()
 @dataclass(frozen = True)
 class XMLItem():
 
@@ -96,17 +117,20 @@ class FSession():
     most_recent_release : Release
     releases : list[Release]
     xml_items : list[XMLItem]
+    badges : Optional[list[Badge]]
 
     def __str__(self):
 
         mrr_formatter : Callable[[Release], str] = lambda mrr : f"('{mrr.version}', '{mrr.date.strftime("%Y-%m-%d")}')"
+        badge_formatter : Callable[[Optional[list[Badge]]], str] = lambda badges : str(None) if badges is None else str(len(badges))
 
         return str(
                 "{ "
                 f"'package_name': '{self.package_name}', "
                 f"'most_recent_release': '{mrr_formatter(self.most_recent_release)}', "
                 f"'releases': '{len(self.releases)}', "
-                f"'xml_items': '{len(self.xml_items)}'"
+                f"'xml_items': '{len(self.xml_items)}', "
+                f"'badges': '{badge_formatter(self.badges)}'"
                 " }"                
             )
 @dataclass(frozen = True)
@@ -255,6 +279,10 @@ class _MessageCollection():
     @staticmethod
     def total_estimated_time_will_be(waiting_time : int, local_packages : int) -> str:
         return f"The total estimated time to complete the whole operation will be: '{str(waiting_time * local_packages)}' seconds."       
+    @staticmethod
+    def only_stable_releases_is(only_stable_releases : bool) -> str:
+        return f"'only_stable_releases' is: '{str(only_stable_releases)}'."
+    
     @staticmethod
     def status_evaluation_operation_successfully_loaded() -> str:
         return "The status evaluation operation has been successfully completed."
@@ -480,9 +508,9 @@ class LocalPackageLoader():
             raise Exception(_MessageCollection.no_packages_found(file_path))
 
         return cast(LSession, l_session)
-class PyPiReleaseFetcher():
+class PyPiBadgeFetcher():
 
-    '''This is a client for PyPi release pages.'''
+    '''This is an utility method to retrieve the badges associated to every release.'''
 
     __get_function : Callable[[str], Response]
 
@@ -492,6 +520,94 @@ class PyPiReleaseFetcher():
             ) -> None:
 
         self.__get_function = get_function
+
+    def __format_url(self, package_name : str) -> str:
+
+        '''Returns the URL for the package's #history page.'''
+
+        url : str =  f"https://pypi.org/project/{package_name}/#history"
+
+        return url  
+    def __extract_and_strip_text(self, tree : HtmlElement, pattern : str, remove_empty_items : bool = True) -> list[str]:
+
+        '''
+            Extracts strings from the provided tree using a XPath pattern that ends in "text()".
+            
+            Whitespaces, newlines and tabs are stripped out from each string.
+
+            Optional: empty items are removed from the returned list.
+        '''
+
+        elements : list[HtmlElement] = tree.xpath(pattern)
+        strs : list[str] = [element.strip() for element in elements]
+
+        if remove_empty_items:
+            strs = [str for str in strs if str]
+
+        return strs
+    def __create_badge(self, package_name : str, version : str, label : str) -> Badge:
+
+        '''Creates a Badge object out of the provided arguments.'''
+
+        badge : Badge = Badge(
+            package_name = package_name, 
+            version = version, 
+            label = cast(Literal["pre-release", "yanked"], label)
+        )
+
+        return badge
+    def __create_badges(self, package_name : str, versions_labels : list[Tuple[str, str]]) -> list[Badge]:
+
+        '''Creates a list of Badge objects out of the provided arguments.'''
+
+        badges : list[Badge] = []
+        for tpl in versions_labels:
+            badge : Badge = self.__create_badge(package_name = package_name, version = tpl[0], label = tpl[1])
+            badges.append(badge)
+
+        return badges
+
+    def try_fetch(self, package_name : str) -> Optional[list[Badge]]:
+
+        '''
+            Fetches all the Badges for the provided package_name.
+
+            If no badges are found, None is returned. 
+        '''
+
+        url : str = self.__format_url(package_name = package_name)
+        
+        response : Response = self.__get_function(url)
+        tree : HtmlElement = html.fromstring(response.content)
+
+        version_pattern : str = "//p[@class='release__version'][span]/text()"
+        versions : list[str] = self.__extract_and_strip_text(tree = tree, pattern = version_pattern)
+
+        if len(versions) == 0: 
+            return None
+
+        label_pattern : str = "//p[@class='release__version'][span]/span/text()"
+        labels : list[str] = self.__extract_and_strip_text(tree = tree, pattern = label_pattern)
+
+        versions_labels : list[Tuple[str, str]] = list(zip(versions, labels, strict = True))
+        badges : list[Badge] = self.__create_badges(package_name = package_name, versions_labels = versions_labels)
+
+        return badges
+class PyPiReleaseFetcher():
+
+    '''This is a client for PyPi release pages.'''
+
+    __get_function : Callable[[str], Response]
+    __badge_fetcher : PyPiBadgeFetcher
+
+    def __init__(
+            self,
+            get_function : Callable[[str], Response] = LambdaCollection.get_function(),
+            badge_fetcher : PyPiBadgeFetcher = PyPiBadgeFetcher()
+            ) -> None:
+
+        self.__get_function = get_function
+        self.__badge_fetcher = badge_fetcher
 
     def __format_url(self, package_name : str) -> str:
 
@@ -650,10 +766,43 @@ class PyPiReleaseFetcher():
         most_recent_release : Release = releases[0]
 
         return most_recent_release
+    def __is_stable_release(self, xml_item : XMLItem, badge_versions : list[str]) -> bool:
 
-    def fetch(self, package_name : str) -> FSession:
+        '''
+            (xml_item.title not in badge_versions) == True => stable
+            (xml_item.title not in badge_versions) == False => unstable
+        '''
 
-        '''Retrieves all the releases from PyPi.org for the provided package_name.'''
+        return (xml_item.title not in badge_versions)
+    def __process_stable_releases(self, package_name : str, xml_items_clean : list[XMLItem], only_stable_releases : bool) -> Tuple[list[XMLItem], Optional[list[Badge]]]:
+
+        '''Encapsulates all the logic related to stable releases.'''
+
+        badges : Optional[list[Badge]] = None
+
+        if only_stable_releases == False:
+            return (xml_items_clean, badges)
+        
+        badges = self.__badge_fetcher.try_fetch(package_name = package_name)       
+        
+        if badges is None:
+            return (xml_items_clean, badges)
+
+        badge_versions : list[str] = [badge.version for badge in badges]
+        xml_items_clean = self.__filter(
+            items = xml_items_clean, 
+            function = lambda x : self.__is_stable_release(xml_item = x, badge_versions = badge_versions)
+        )
+
+        return (xml_items_clean, badges)
+
+    def fetch(self, package_name : str, only_stable_releases : bool) -> FSession:
+
+        '''
+            Retrieves all the releases from PyPi.org for the provided package_name.
+            
+            The "only_stable_releases" flag, if True, will filter out all the releases that have been badged as "pre-release" or "yanked".
+        '''
 
         url : str =  self.__format_url(package_name = package_name)
         response : Response = self.__get_function(url)
@@ -662,7 +811,8 @@ class PyPiReleaseFetcher():
         xml_items_clean : list[XMLItem] = copy.deepcopy(xml_items_raw)
         xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_title(xml_item = x))
         xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_pubdate(xml_item = x))
-        
+        xml_items_clean, badges = self.__process_stable_releases(package_name = package_name, xml_items_clean = xml_items_clean, only_stable_releases = only_stable_releases)
+            
         if len(xml_items_clean) == 0:
             raise Exception(_MessageCollection.no_suitable_xml_items_found(url = url))
 
@@ -673,7 +823,8 @@ class PyPiReleaseFetcher():
             package_name = package_name,
             most_recent_release = self.__get_most_recent(releases = releases),
             releases = releases,
-            xml_items = xml_items_raw
+            xml_items = xml_items_raw,
+            badges = badges
         )
 
         return f_session
@@ -734,14 +885,14 @@ class RequirementChecker():
         )
 
         return requirement_detail
-    def __create_requirement_details(self, l_session : LSession, waiting_time : int) -> list[RequirementDetail]:
+    def __create_requirement_details(self, l_session : LSession, only_stable_releases : bool, waiting_time : int) -> list[RequirementDetail]:
 
         '''Creates a list of RequirementDetail objects out of the provided l_session.'''
 
         requirement_details : list[RequirementDetail] = []
         for current_package in l_session.packages:
 
-            f_session : FSession = self.__release_fetcher.fetch(package_name = current_package.name)
+            f_session : FSession = self.__release_fetcher.fetch(package_name = current_package.name, only_stable_releases = only_stable_releases)
             
             requirement_detail : RequirementDetail = self.__create_requirement_detail(
                 current_package = current_package, 
@@ -785,7 +936,7 @@ class RequirementChecker():
 
         return requirement_summary
 
-    def check(self, file_path : str, waiting_time : int = 5) -> RequirementSummary:
+    def check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> RequirementSummary:
 
         '''
             This method:
@@ -812,8 +963,13 @@ class RequirementChecker():
         self.__logging_function(_MessageCollection.x_unparsed_lines(l_session.unparsed_lines))
         self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
         self.__logging_function(_MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)))
+        self.__logging_function(_MessageCollection.only_stable_releases_is(only_stable_releases))
         
-        requirement_details : list[RequirementDetail] = self.__create_requirement_details(l_session = l_session, waiting_time = waiting_time)
+        requirement_details : list[RequirementDetail] = self.__create_requirement_details(
+            l_session = l_session, 
+            waiting_time = waiting_time, 
+            only_stable_releases = only_stable_releases
+        )
 
         self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
         self.__list_logging_function(self.__logging_function, requirement_details)
@@ -826,7 +982,7 @@ class RequirementChecker():
         self.__logging_function(_MessageCollection.status_checking_operation_completed())
 
         return requirement_summary
-    def try_check(self, file_path : str, waiting_time : int = 5) -> Optional[RequirementSummary]:
+    def try_check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> Optional[RequirementSummary]:
 
         '''
             It performs the same operations as check().
@@ -835,7 +991,7 @@ class RequirementChecker():
 
         try:
             
-            return self.check(file_path = file_path, waiting_time = waiting_time)
+            return self.check(file_path = file_path, only_stable_releases = only_stable_releases, waiting_time = waiting_time)
 
         except Exception as e:
 

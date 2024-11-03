@@ -6,12 +6,12 @@ from datetime import datetime
 from parameterized import parameterized
 from requests import Response
 from time import time
-from typing import Any, Optional, Callable, Tuple, cast
+from typing import Any, Literal, Optional, Callable, Tuple, cast
 from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, LSession, LambdaCollection, LocalPackageLoader, Package, LanguageChecker
+from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, LanguageChecker, PyPiBadgeFetcher
 from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
@@ -127,6 +127,36 @@ class SupportMethodProvider():
             )
 
     @staticmethod
+    def are_badges_equal(b1 : Badge, b2 : Badge) -> bool:
+
+        '''Returns True if all the fields of the two objects contain the same values.'''
+
+        return (
+            b1.package_name == b2.package_name and
+            b1.version == b2.version and
+            b1.label == b2.label
+        )
+    @staticmethod
+    def are_lists_of_badges_equal(list1 : Optional[list[Badge]], list2 : Optional[list[Badge]]) -> bool:
+
+        '''Returns True if all the items of list1 contain the same values of the corresponding items of list2.'''
+
+        if list1 is None and list2 is not None:
+            return False
+        
+        if list1 is not None and list2 is None:
+            return False
+        
+        if list1 is None and list2 is None:
+            return True
+
+        return SupportMethodProvider.__are_lists_equal(
+                list1 = cast(list[Badge], list1), 
+                list2 = cast(list[Badge], list2), 
+                comparer = lambda b1, b2 : SupportMethodProvider.are_badges_equal(b1, b2)
+            )
+
+    @staticmethod
     def are_lsessions_equal(ls1 : LSession, ls2 : LSession) -> bool:
 
         '''Returns True if all the fields of the two objects contain the same values.'''
@@ -144,7 +174,8 @@ class SupportMethodProvider():
             fs1.package_name == fs2.package_name and
             SupportMethodProvider.are_releases_equal(fs1.most_recent_release, fs2.most_recent_release) and
             SupportMethodProvider.are_lists_of_releases_equal(fs1.releases, fs2.releases) and
-            SupportMethodProvider.are_lists_of_xmlitems_equal(fs1.xml_items, fs2.xml_items)
+            SupportMethodProvider.are_lists_of_xmlitems_equal(fs1.xml_items, fs2.xml_items) and 
+            SupportMethodProvider.are_lists_of_badges_equal(fs1.badges, fs2.badges)
             )
 
 # TEST CLASSES
@@ -158,11 +189,8 @@ class XMLItemTestCase(unittest.TestCase):
         self.author : Optional[str] = "stephen@hotmail.com"
         self.pubdate : Optional[datetime] = datetime(2024, 10, 5, 18, 28, 18)
         self.pubdate_str : Optional[str] = "Sat, 05 Oct 2024 18:28:18 GMT"
-    def test_xmlitem_shouldinitializeasexpected_wheninvoked(self) -> None:
-        
-        # Arrange
-        # Act
-        xml_item : XMLItem = XMLItem(
+
+        self.xml_item : XMLItem = XMLItem(
             title = self.title,
             link = self.link,
             description = self.description,
@@ -171,13 +199,17 @@ class XMLItemTestCase(unittest.TestCase):
             pubdate_str = self.pubdate_str
         )
 
+    def test_xmlitem_shouldinitializeasexpected_wheninvoked(self) -> None:
+        
+        # Arrange
+        # Act
         # Assert
-        self.assertEqual(xml_item.title, self.title)
-        self.assertEqual(xml_item.link, self.link)
-        self.assertEqual(xml_item.description, self.description)
-        self.assertEqual(xml_item.author, self.author)
-        self.assertEqual(xml_item.pubdate, self.pubdate)
-        self.assertEqual(xml_item.pubdate_str, self.pubdate_str)
+        self.assertEqual(self.xml_item.title, self.title)
+        self.assertEqual(self.xml_item.link, self.link)
+        self.assertEqual(self.xml_item.description, self.description)
+        self.assertEqual(self.xml_item.author, self.author)
+        self.assertEqual(self.xml_item.pubdate, self.pubdate)
+        self.assertEqual(self.xml_item.pubdate_str, self.pubdate_str)
     def test_xmlitem_shouldreturnexpectedstring_whenargumentsarenotnone(self):
         
 		# Arrange
@@ -189,17 +221,9 @@ class XMLItemTestCase(unittest.TestCase):
             "'pubdate_str': 'Sat, 05 Oct 2024 18:28:18 GMT' }"
         )
         
-        # Act
-        xml_item : XMLItem = XMLItem(
-            title = self.title,
-            link = self.link,
-            description = self.description,
-            author = self.author,
-            pubdate = self.pubdate,
-            pubdate_str = self.pubdate_str
-        )		
-        actual_str : str = str(xml_item)
-        actual_repr : str = repr(xml_item)
+        # Act	
+        actual_str : str = str(self.xml_item)
+        actual_repr : str = repr(self.xml_item)
         
         # Assert
         self.assertEqual(actual_str, expected)
@@ -237,33 +261,29 @@ class ReleaseTestCase(unittest.TestCase):
         self.package_name : str = "numpy"
         self.version : str = "2.1.2"
         self.date : datetime = datetime(2024, 10, 5, 18, 28, 18)
-    def test_release_shouldinitializeasexpected_wheninvoked(self) -> None:
-        
-		# Arrange       
-        # Act
-        release : Release = Release(
+
+        self.release : Release = Release(
 			package_name = self.package_name, 
 			version = self.version, 
 			date = self.date
 		)
+
+    def test_release_shouldinitializeasexpected_wheninvoked(self) -> None:
         
+		# Arrange       
+        # Act      
         # Assert
-        self.assertEqual(release.package_name, self.package_name)
-        self.assertEqual(release.version, self.version)
-        self.assertEqual(release.date, self.date)
+        self.assertEqual(self.release.package_name, self.package_name)
+        self.assertEqual(self.release.version, self.version)
+        self.assertEqual(self.release.date, self.date)
     def test_release_shouldreturnexpectedstring_wheninvoked(self) -> None:
         
 		# Arrange
         expected : str = "{ 'package_name': 'numpy', 'version': '2.1.2', 'date': '2024-10-05' }"
         
-        # Act
-        release : Release = Release(
-			package_name = self.package_name, 
-			version = self.version, 
-			date = self.date
-		)		
-        actual_str : str = str(release)
-        actual_repr : str = repr(release)
+        # Act		
+        actual_str : str = str(self.release)
+        actual_repr : str = repr(self.release)
         
         # Assert
         self.assertEqual(actual_str, expected)
@@ -288,6 +308,7 @@ class FSessionTestCase(unittest.TestCase):
         )
 
         self.mrr_formatter : Callable[[Release], str] = lambda mrr : f"('{mrr.version}', '{mrr.date.strftime("%Y-%m-%d")}')"
+        self.badge_formatter : Callable[[Optional[list[Badge]]], str] = lambda badges : str(None) if badges is None else str(len(badges))
 
         self.xml_items: list[XMLItem] = [
             XMLItem(title="2.1.2", link="https://pypi.org/project/numpy/2.1.2/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Sat, 05 Oct 2024 18:28:18 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sat, 05 Oct 2024 18:28:18 GMT"),
@@ -295,40 +316,68 @@ class FSessionTestCase(unittest.TestCase):
             XMLItem(title="2.0.2", link="https://pypi.org/project/numpy/2.0.2/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Mon, 26 Aug 2024 20:04:14 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Mon, 26 Aug 2024 20:04:14 GMT"),
             XMLItem(title="2.1.0", link="https://pypi.org/project/numpy/2.1.0/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Sun, 18 Aug 2024 21:39:07 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sun, 18 Aug 2024 21:39:07 GMT")
         ]
-    def test_fsession_shouldinitializeasexpected_wheninvoked(self):
-	
-		# Arrange
-        # Act
-        f_session : FSession = FSession(
+
+        self.badges : list[Badge] = [
+            Badge(package_name = "numpy", version = "2.1.2alpha", label = "pre-release"),
+            Badge(package_name = "numpy", version = "2.0.2d0", label = "yanked")
+        ]
+
+        self.f_session : FSession = FSession(
             package_name = self.package_name,
             most_recent_release = self.most_recent_release,
             releases = self.releases,
-            xml_items = self.xml_items
+            xml_items = self.xml_items,
+            badges = self.badges
         )
-		
+
+    def test_fsession_shouldinitializeasexpected_wheninvoked(self):
+	
+		# Arrange
+        # Act	
 		# Assert
-        self.assertEqual(f_session.package_name, self.package_name)
-        self.assertEqual(f_session.most_recent_release.package_name, self.most_recent_release.package_name)
-        self.assertEqual(f_session.most_recent_release.version, self.most_recent_release.version)
-        self.assertEqual(f_session.most_recent_release.date, self.most_recent_release.date)
-        self.assertEqual(f_session.releases, self.releases)
-        self.assertEqual(f_session.xml_items, self.xml_items)
-    def test_fsession_shouldreturnexpectedstring_whenargumentsarenotnone(self):
+        self.assertEqual(self.f_session.package_name, self.package_name)
+        self.assertEqual(self.f_session.most_recent_release.package_name, self.most_recent_release.package_name)
+        self.assertEqual(self.f_session.most_recent_release.version, self.most_recent_release.version)
+        self.assertEqual(self.f_session.most_recent_release.date, self.most_recent_release.date)
+        self.assertEqual(self.f_session.releases, self.releases)
+        self.assertEqual(self.f_session.xml_items, self.xml_items)
+        self.assertEqual(self.f_session.badges, self.badges)
+    def test_fsession_shouldreturnexpectedstring_whenbadgesisnotnone(self):
         
 		# Arrange
         expected: str = (
             "{ 'package_name': 'numpy', "
             f"'most_recent_release': '{self.mrr_formatter(self.most_recent_release)}', "
             "'releases': '4', "
-            "'xml_items': '4' }"
-        )		
+            "'xml_items': '4', "
+            f"'badges': '{self.badge_formatter(self.badges)}' "
+            "}"
+        )
+		
+        # Act
+        actual : str = str(self.f_session)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_fsession_shouldreturnexpectedstring_whenbadgesisnone(self):
+        
+		# Arrange
+        expected: str = (
+            "{ 'package_name': 'numpy', "
+            f"'most_recent_release': '{self.mrr_formatter(self.most_recent_release)}', "
+            "'releases': '4', "
+            "'xml_items': '4', "
+            "'badges': 'None' "
+            "}"
+        )
 		
         # Act
         f_session : FSession = FSession(
             package_name = self.package_name,
             most_recent_release = self.most_recent_release,
             releases = self.releases,
-            xml_items = self.xml_items
+            xml_items = self.xml_items,
+            badges = None
         )
         actual : str = str(f_session)
 
@@ -437,22 +486,22 @@ class LSessionTestCase(unittest.TestCase):
             "    && dpkg -i pandoc-3.4-1-amd64.deb \\", 
             "    && rm -f pandoc-3.4-1-amd64.deb"
         ]
+        self.l_session : LSession = LSession(
+            packages = self.packages,
+            unparsed_lines = self.unparsed_lines
+        )        
+
     def test_lsession_shouldinitializeasexpected_wheninvoked(self):
 	
 		# Arrange
         # Act
-        l_session : LSession = LSession(
-            packages = self.packages,
-            unparsed_lines = self.unparsed_lines
-        )
-		
 		# Assert
         self.assertTrue(
             SupportMethodProvider.are_lists_of_packages_equal(
-                list1 = l_session.packages,
+                list1 = self.l_session.packages,
                 list2 = self.packages
             ))
-        self.assertEqual(l_session.unparsed_lines, self.unparsed_lines)
+        self.assertEqual(self.l_session.unparsed_lines, self.unparsed_lines)
     def test_lsession_shouldreturnexpectedstring_wheninvoked(self):
         
 		# Arrange
@@ -464,11 +513,7 @@ class LSessionTestCase(unittest.TestCase):
             )		
 		
         # Act
-        l_session : LSession = LSession(
-            packages = self.packages,
-            unparsed_lines = self.unparsed_lines
-        )
-        actual : str = str(l_session)
+        actual : str = str(self.l_session)
 
         # Assert
         self.assertEqual(actual, expected)
@@ -476,78 +521,78 @@ class RequirementDetailTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
 
-        self.package1 : Package = Package(name = "requests", version = "2.26.0")
-        self.release1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2023, 10, 5))
-        self.is_version_matching1 : bool = True
-        self.description1 : str = "The current version matches the most recent release."
+        self.package_1 : Package = Package(name = "requests", version = "2.26.0")
+        self.release_1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2023, 10, 5))
+        self.is_version_matching_1 : bool = True
+        self.description_1 : str = "The current version matches the most recent release."
 
-        self.package2 : Package = Package(name = "numpy", version = "1.26.3")
-        self.release2 : Release = Release(package_name = "numpy", version = "2.1.2", date = datetime(2024, 10, 5))
-        self.is_version_matching2 : bool = False
-        self.description2 : str = (
+        self.package_2 : Package = Package(name = "numpy", version = "1.26.3")
+        self.release_2 : Release = Release(package_name = "numpy", version = "2.1.2", date = datetime(2024, 10, 5))
+        self.is_version_matching_2 : bool = False
+        self.description_2 : str = (
             "The current version ('1.26.3') of 'numpy' doesn't match with the most recent release "
             "('2.1.2', '2024-10-05')."
         )
-        self.expected2 : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
+        self.expected_2 : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
+
+        self.requirement_detail_1 : RequirementDetail = RequirementDetail(
+            current_package = self.package_1,
+            most_recent_release = self.release_1,
+            is_version_matching = self.is_version_matching_1,
+            description = self.description_1
+        )
+        self.requirement_detail_2 : RequirementDetail = RequirementDetail(
+            current_package = self.package_2,
+            most_recent_release = self.release_2,
+            is_version_matching = self.is_version_matching_2,
+            description = self.description_2
+        )    
+
     def test_requirementdetail_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
         # Act
-        requirement_detail : RequirementDetail = RequirementDetail(
-            current_package = self.package1,
-            most_recent_release = self.release1,
-            is_version_matching = self.is_version_matching1,
-            description = self.description1
-        )
-
         # Assert
-        self.assertEqual(requirement_detail.current_package, self.package1)
-        self.assertEqual(requirement_detail.most_recent_release, self.release1)
-        self.assertTrue(requirement_detail.is_version_matching)
-        self.assertEqual(requirement_detail.description, self.description1)
+        self.assertEqual(self.requirement_detail_1.current_package, self.package_1)
+        self.assertEqual(self.requirement_detail_1.most_recent_release, self.release_1)
+        self.assertTrue(self.requirement_detail_1.is_version_matching)
+        self.assertEqual(self.requirement_detail_1.description, self.description_1)
     def test_requirementdetail_shouldreturnexpectedstring_wheninvoked(self) -> None:
         
 		# Arrange
-        requirement_detail : RequirementDetail = RequirementDetail(
-            current_package = self.package2,
-            most_recent_release = self.release2,
-            is_version_matching = self.is_version_matching2,
-            description = self.description2
-        )
-
         # Act
-        actual_str : str = str(requirement_detail)
-        actual_repr : str = requirement_detail.__repr__()
+        actual_str : str = str(self.requirement_detail_2)
+        actual_repr : str = self.requirement_detail_2.__repr__()
 
         # Assert
-        self.assertEqual(actual_str, self.expected2)
-        self.assertEqual(actual_repr, self.expected2)
+        self.assertEqual(actual_str, self.expected_2)
+        self.assertEqual(actual_repr, self.expected_2)
 class RequirementSummaryTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
         
-        self.package1 : Package = Package(name = "black", version = "22.12.0")
-        self.release1 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 5, 15))
-        self.is_version_matching1 : bool = True
-        self.description1 : str = "The current version matches the most recent release."
+        self.package_1 : Package = Package(name = "black", version = "22.12.0")
+        self.release_1 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 5, 15))
+        self.is_version_matching_1 : bool = True
+        self.description_1 : str = "The current version matches the most recent release."
 		
-        self.requirement_detail1 : RequirementDetail = RequirementDetail(
-            current_package = self.package1,
-            most_recent_release = self.release1,
-            is_version_matching = self.is_version_matching1,
-            description = self.description1
+        self.requirement_detail_1 : RequirementDetail = RequirementDetail(
+            current_package = self.package_1,
+            most_recent_release = self.release_1,
+            is_version_matching = self.is_version_matching_1,
+            description = self.description_1
         )
         
-        self.package2 : Package = Package(name = "opencv-python", version = "4.5.0")
-        self.release2 : Release = Release(package_name = "opencv-python", version = "4.10.0", date = datetime(2023, 8, 12))
-        self.is_version_matching2 : bool = False
-        self.description2 : str = "The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12')."
+        self.package_2 : Package = Package(name = "opencv-python", version = "4.5.0")
+        self.release_2 : Release = Release(package_name = "opencv-python", version = "4.10.0", date = datetime(2023, 8, 12))
+        self.is_version_matching_2 : bool = False
+        self.description_2 : str = "The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12')."
 		
         self.requirement_detail2 : RequirementDetail = RequirementDetail(
-            current_package = self.package2,
-            most_recent_release = self.release2,
-            is_version_matching = self.is_version_matching2,
-            description = self.description2
+            current_package = self.package_2,
+            most_recent_release = self.release_2,
+            is_version_matching = self.is_version_matching_2,
+            description = self.description_2
         )
 
         self.total_packages : int = 2
@@ -556,50 +601,42 @@ class RequirementSummaryTestCase(unittest.TestCase):
         self.mismatching : int = 1
         self.mismatching_prc : str = "50.00%"
         self.details : list[RequirementDetail] = [
-			self.requirement_detail1, 
+			self.requirement_detail_1, 
 			self.requirement_detail2
 		]
 
         self.expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
-    def test_requirementsummary_shouldinitializeasexpected_wheninvoked(self) -> None:
-	
-        # Arrange
-        # Act
-        requirement_summary : RequirementSummary = RequirementSummary(
+    
+        self.requirement_summary : RequirementSummary = RequirementSummary(
             total_packages = self.total_packages,
             matching = self.matching,
             matching_prc = self.matching_prc,
             mismatching = self.mismatching,
             mismatching_prc = self.mismatching_prc,
             details = self.details
-        )
+        )    
 
+    def test_requirementsummary_shouldinitializeasexpected_wheninvoked(self) -> None:
+	
+        # Arrange
+        # Act
         # Assert
-        self.assertEqual(requirement_summary.total_packages, self.total_packages)
-        self.assertEqual(requirement_summary.matching, self.matching)
-        self.assertEqual(requirement_summary.matching_prc, self.matching_prc)
-        self.assertEqual(requirement_summary.mismatching, self.mismatching)
-        self.assertEqual(requirement_summary.mismatching_prc, self.mismatching_prc)
-        self.assertEqual(len(requirement_summary.details), len(self.details))
+        self.assertEqual(self.requirement_summary.total_packages, self.total_packages)
+        self.assertEqual(self.requirement_summary.matching, self.matching)
+        self.assertEqual(self.requirement_summary.matching_prc, self.matching_prc)
+        self.assertEqual(self.requirement_summary.mismatching, self.mismatching)
+        self.assertEqual(self.requirement_summary.mismatching_prc, self.mismatching_prc)
+        self.assertEqual(len(self.requirement_summary.details), len(self.details))
         self.assertTrue(
             SupportMethodProvider.are_lists_of_requirementdetails_equal(
-                list1 = requirement_summary.details,
+                list1 = self.requirement_summary.details,
                 list2 = self.details
             ))
     def test_requirementsummary_shouldreturnexpectedstring_wheninvoked(self) -> None:
         
 		# Arrange
-        requirement_summary : RequirementSummary = RequirementSummary(
-            total_packages = self.total_packages,
-            matching = self.matching,
-            matching_prc = self.matching_prc,
-            mismatching = self.mismatching,
-            mismatching_prc = self.mismatching_prc,
-            details = self.details
-        )
-
         # Act
-        actual : str = str(requirement_summary)
+        actual : str = str(self.requirement_summary)
 
         # Assert
         self.assertEqual(actual, self.expected) 
@@ -787,21 +824,25 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
             Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42)),
             Release(package_name = "pandas", version = "2.2.2", date = datetime(2024, 4, 10, 19, 44, 10))
         ]
+
+        self.badges : list[Badge] = [
+            Badge(package_name = "numpy", version = "2.2.3alpha", label = "pre-release"),
+            Badge(package_name = "numpy", version = "2.2.2d0", label = "yanked")
+        ]
     
-    @parameterized.expand([
-        ["Fri, 20 Sep 2024 13:08:42 GMT", datetime(2024, 9, 20, 13, 8, 42)],
-        [None, None]
-    ])
-    def test_parsepubdatestr_shouldreturndatetimeornone_wheninvoked(self, pubdate_str : Optional[str], expected : Optional[datetime]) -> None:
+        self.badge_fetcher_mock : PyPiBadgeFetcher = Mock()
+        self.badge_fetcher_mock.try_fetch.return_value = self.badges
+
+    def test_pypireleasefetcher_shouldinitializeasexpected_wheninvoked(self) -> None:
         
-        # Arrange      
+        # Arrange
         # Act
-        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
-        actual : Optional[datetime] = release_fetcher._PyPiReleaseFetcher__parse_pubdate_str(pubdate_str) # type: ignore
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher()
 
         # Assert
-        self.assertEqual(actual, expected)
-    
+        self.assertIsInstance(release_fetcher, PyPiReleaseFetcher)
+        self.assertTrue(callable(release_fetcher._PyPiReleaseFetcher__get_function))                    # type: ignore
+        self.assertIsInstance(release_fetcher._PyPiReleaseFetcher__badge_fetcher, PyPiBadgeFetcher)     # type: ignore
     def test_fetch_shouldraiseexception_whenxmlitemsarezero(self) -> None:
         
         # Arrange
@@ -816,20 +857,72 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         # Act, Assert
         with self.assertRaises(expected_exception = Exception, msg = msg):
             release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = get_function_mock)
-            release_fetcher.fetch(package_name = "pandas")
-    def test_fetch_shouldreturnexpectedfsession_wheninvoked(self) -> None:
+            release_fetcher.fetch(package_name = "pandas", only_stable_releases = False)
+    def test_fetch_shouldreturnexpectedfsession_whenonlystablereleasesisfalse(self) -> None:
         
         # Arrange
         expected : FSession = FSession(
             package_name = "pandas",
             most_recent_release = self.releases[0],
             releases = self.releases,
-            xml_items = self.xml_items
+            xml_items = self.xml_items,
+            badges = None
         )
         
         # Act
         release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
-        actual : FSession = release_fetcher.fetch(package_name = "pandas")
+        actual : FSession = release_fetcher.fetch(package_name = "pandas", only_stable_releases = False)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_fetch_shouldreturnexpectedfsession_whenonlystablereleasesistrue(self) -> None:
+        
+        # Arrange
+        expected : FSession = FSession(
+            package_name = "pandas",
+            most_recent_release = self.releases[0],
+            releases = self.releases,
+            xml_items = self.xml_items,
+            badges = self.badges
+        )
+        
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock, badge_fetcher = self.badge_fetcher_mock)
+        actual : FSession = release_fetcher.fetch(package_name = "pandas", only_stable_releases = True)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_fetch_shouldreturnexpectedfsession_whenonlystablereleasesistrueandtrycatchreturnsnone(self) -> None:
+        
+        # Arrange
+        badge_fetcher_mock : PyPiBadgeFetcher = Mock()
+        badge_fetcher_mock.try_fetch.return_value = None
+
+        expected : FSession = FSession(
+            package_name = "pandas",
+            most_recent_release = self.releases[0],
+            releases = self.releases,
+            xml_items = self.xml_items,
+            badges = None
+        )        
+        
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock, badge_fetcher = badge_fetcher_mock)
+        actual : FSession = release_fetcher.fetch(package_name = "pandas", only_stable_releases = True)
+
+        # Assert
+        self.assertEqual(actual, expected)
+
+    @parameterized.expand([
+        ["Fri, 20 Sep 2024 13:08:42 GMT", datetime(2024, 9, 20, 13, 8, 42)],
+        [None, None]
+    ])
+    def test_parsepubdatestr_shouldreturndatetimeornone_wheninvoked(self, pubdate_str : Optional[str], expected : Optional[datetime]) -> None:
+        
+        # Arrange      
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock)
+        actual : Optional[datetime] = release_fetcher._PyPiReleaseFetcher__parse_pubdate_str(pubdate_str) # type: ignore
 
         # Assert
         self.assertEqual(actual, expected)
@@ -852,7 +945,8 @@ class RequirementCheckerTestCase(unittest.TestCase):
             releases = [self.release1],
             xml_items = [
                 XMLItem(title="2.1.2", link="https://pypi.org/project/pandas/2.2.3/", description="", author=None, pubdate=datetime.strptime("Sat, 05 Oct 2024 18:28:18 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sat, 05 Oct 2024 18:28:18 GMT"),
-            ]
+            ],
+            badges = None
         )
 
         self.requirement_detail1 : RequirementDetail = RequirementDetail(
@@ -866,6 +960,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         self.package2 : Package = Package(name = "pandas", version = "2.2.2")
         self.release2 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
         self.expected_tpl2 : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(self.package2, self.release2))
+
     def test_requirementchecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
         
         # Arrange
@@ -894,7 +989,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         requirement_checker : RequirementChecker = RequirementChecker(
             release_fetcher = release_fetcher_mock
         )
-        actual : list[RequirementDetail] = requirement_checker._RequirementChecker__create_requirement_details(l_session = self.l_session1, waiting_time = 0) # type: ignore
+        actual : list[RequirementDetail] = requirement_checker._RequirementChecker__create_requirement_details(l_session = self.l_session1, only_stable_releases = False, waiting_time = 0) # type: ignore
         
         # Assert
         self.assertTrue(
@@ -914,7 +1009,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         actual : str = requirement_checker._RequirementChecker__calculate_prc(value = value, total = total) # type: ignore
         
         # Assert
-        self.assertEqual(actual, expected)
+        self.assertEqual(actual, expected)  
     def test_check_shouldraiseexpectedexceptionandmessage_whenwaitingtimelessthanminimum(self):
         
         # Arrange
@@ -938,8 +1033,8 @@ class RequirementCheckerTestCase(unittest.TestCase):
 
         release1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2024, 1, 1))
         release2 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 1, 2))      
-        f_session_1: FSession = FSession(package_name = "requests", most_recent_release = release1, releases = [ release1 ], xml_items = [])
-        f_session_2: FSession = FSession(package_name = "black", most_recent_release = release2, releases = [ release2 ], xml_items = [])
+        f_session_1: FSession = FSession(package_name = "requests", most_recent_release = release1, releases = [ release1 ], xml_items = [], badges = None)
+        f_session_2: FSession = FSession(package_name = "black", most_recent_release = release2, releases = [ release2 ], xml_items = [], badges = None)
 
         package_loader_mock : LocalPackageLoader = Mock()
         package_loader_mock.load.return_value = l_session
@@ -952,6 +1047,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         sleeping_function_mock : Callable[[int], None] = lambda x : None
 
         file_path : str = r"C:/Dockerfile"
+        only_stable_releases : bool = False
         waiting_time : int = 5
 
         descriptions : list[str] = [
@@ -977,7 +1073,8 @@ class RequirementCheckerTestCase(unittest.TestCase):
             _MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages),
             _MessageCollection.x_unparsed_lines(l_session.unparsed_lines),
             _MessageCollection.starting_to_evaluate_status_local_package(),
-            _MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)),            
+            _MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)),
+            _MessageCollection.only_stable_releases_is(only_stable_releases),
             _MessageCollection.status_evaluation_operation_successfully_loaded(),
             descriptions[0],
             descriptions[1],
@@ -996,7 +1093,11 @@ class RequirementCheckerTestCase(unittest.TestCase):
             sleeping_function = sleeping_function_mock
 
         )
-        actual : RequirementSummary = requirement_checker.check(file_path = file_path, waiting_time = waiting_time)
+        actual : RequirementSummary = requirement_checker.check(
+            file_path = file_path, 
+            only_stable_releases = only_stable_releases, 
+            waiting_time = waiting_time
+        )
 
         # Assert
         self.assertEqual(actual.total_packages, expected.total_packages)
@@ -1009,6 +1110,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         
         # Arrange
         file_path : str = r"C:/Dockerfile"
+        only_stable_releases : bool = False
         waiting_time : int = 2
         minimum_wt : int = 5
         expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
@@ -1025,7 +1127,11 @@ class RequirementCheckerTestCase(unittest.TestCase):
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        requirement_summary : Optional[RequirementSummary] = requirement_checker.try_check(file_path = file_path, waiting_time = waiting_time)
+        requirement_summary : Optional[RequirementSummary] = requirement_checker.try_check(
+            file_path = file_path, 
+            only_stable_releases = only_stable_releases, 
+            waiting_time = waiting_time
+        )
         
         # Assert
         self.assertIsNone(requirement_summary)
@@ -1113,6 +1219,157 @@ class LanguageCheckerTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(expected, actual)
+class BadgeTestCase(unittest.TestCase):
+    
+    def setUp(self) -> None:
+
+        self.package_name : str = "numpy"
+        self.version : str = "2.1.2alpha"
+        self.label : Literal["pre-release", "yanked"] = "pre-release"
+
+        self.badge : Badge = Badge(package_name = self.package_name, version = self.version, label = self.label)
+
+    def test_badge_shouldinitializeasexpected_wheninvoked(self) -> None:
+
+        # Arrange
+        # Act
+        # Assert
+        self.assertEqual(self.badge.package_name, self.package_name)
+        self.assertEqual(self.badge.version, self.version)
+        self.assertEqual(self.badge.label, self.label)
+    def test_str_shouldreturnexpectedstring_wheninvoked(self) -> None:
+
+        # Arrange
+        expected : str = str(
+            "{ "
+            f"'package_name': '{self.package_name}', "
+            f"'version': '{self.version}', "
+            f"'label': '{self.label}'"
+            " }"
+        )
+
+        # Act
+        actual_str : str = str(self.badge)
+        actual_repr : str = repr(self.badge)
+
+        # Assert
+        self.assertEqual(actual_str, expected)
+        self.assertEqual(actual_repr, expected)
+class PyPiBadgeFetcherTestCase(unittest.TestCase):
+
+    def setUp(self) -> None:
+
+        self.badge_fetcher : PyPiBadgeFetcher = PyPiBadgeFetcher()
+    
+        self.html_response : str = str(
+            '<div class="release-timeline">'
+            '<div class="release release--latest">'
+            '<div class="release__meta"></div>'
+            '<div class="release__graphic">'
+            '<div class="release__line"></div>'
+            '<img class="release__node" alt="" src="https://pypi.org/static/images/white-cube.2351a86c.svg">'
+            '</div>'
+            '<a class="card release__card" href="/project/ipykernel/7.0.0a0/">'
+            '<p class="release__version">7.0.0a0'
+            '<span class="badge badge--warning">pre-release</span>'
+            '</p>'
+            '<p class="release__version-date">'
+            '<time datetime="2024-10-22T08:26:22+0000">Oct 22, 2024</time>'
+            '</p>'
+            '</a>'
+            '</div>'
+            '<div class="release release--current">'
+            '<div class="release__meta"><span class="badge">This version</span></div>'
+            '<div class="release__graphic">'
+            '<div class="release__line"></div>'
+            '<img class="release__node" alt="" src="https://pypi.org/static/images/blue-cube.572a5bfb.svg">'
+            '</div>'
+            '<a class="card release__card" href="/project/ipykernel/6.29.5/">'
+            '<p class="release__version">6.29.5</p>'
+            '<p class="release__version-date">'
+            '<time datetime="2024-07-01T14:07:19+0000">Jul 1, 2024</time>'
+            '</p>'
+            '</a>'
+            '</div>'
+            '<div class="release">'
+            '<div class="release__meta"></div>'
+            '<div class="release__graphic">'
+            '<div class="release__line"></div>'
+            '<img class="release__node" alt="" src="https://pypi.org/static/images/white-cube.2351a86c.svg">'
+            '</div>'
+            '<a class="card release__card" href="/project/ipykernel/6.29.4/">'
+            '<p class="release__version">6.29.4</p>'
+            '<p class="release__version-date">'
+            '<time datetime="2024-03-27T22:25:41+0000">Mar 27, 2024</time>'
+            '</p>'
+            '</a>'
+            '</div>'
+            '<div class="release__graphic">'
+            '<div class="release__line"></div>'
+            '<img class="release__node" alt="" src="https://pypi.org/static/images/white-cube.2351a86c.svg">'
+            '</div>'
+            '<a class="card release__card" href="/project/ipykernel/6.27.0/">'
+            '<p class="release__version">6.27.0'
+            '<span class="badge badge--danger">yanked</span>'
+            '</p>'
+            '<p class="release__version-date">'
+            '<time datetime="2023-11-21T11:23:46+0000">Nov 21, 2023</time>'
+            '</p>'
+            '<div class="callout-block callout-block--danger release__yanked-reason">'
+            '<p>Reason this release was yanked:</p><p>broke %edit magic</p>'
+            '</div>'
+            '</a>'
+            '</div>'
+        ) 
+        self.package_name : str = "ipykernel"
+        self.badges : list[Badge] = [
+            Badge(package_name = "ipykernel", version = "7.0.0a0", label = "pre-release"),
+            Badge(package_name = "ipykernel", version = "6.27.0", label = "yanked")
+        ]
+
+        self.response_mock : Response = Mock(content = self.html_response)       
+        self.get_function_mock : Callable[[str], Response] = Mock(return_value = self.response_mock)
+
+    def test_pypibadgefetcher_shouldinitializeasexpected_wheninvoked(self) -> None:
+        
+        # Arrange
+        # Act
+        # Assert
+        self.assertIsInstance(self.badge_fetcher, PyPiBadgeFetcher)
+        self.assertTrue(callable(self.badge_fetcher._PyPiBadgeFetcher__get_function))   # type: ignore
+    def test_formaturl_shouldreturnexpectedurl_wheninvoked(self) -> None:
+
+        # Arrange
+        package_name : str = "pandas"
+        expected : str = "https://pypi.org/project/pandas/#history"
+        
+        # Act
+        actual : str = self.badge_fetcher._PyPiBadgeFetcher__format_url(package_name = package_name)  # type: ignore
+        
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_tryfetch_shouldreturnexpectedbadges_wheninvoked(self) -> None:
+        
+        # Arrange       
+        # Act
+        badge_fetcher = PyPiBadgeFetcher(get_function = self.get_function_mock)
+        actual : Optional[list[Badge]] = badge_fetcher.try_fetch(package_name = self.package_name)
+        
+        # Assert
+        self.assertTrue(SupportMethodProvider().are_lists_of_badges_equal(list1 = actual, list2 = self.badges))
+    def test_tryfetch_shouldreturnnone_whennobadgesfound(self) -> None:
+        
+        # Arrange
+        response_mock : Response = Mock(content = "<html></html>")
+        get_function_mock : Callable[[str], Response] = Mock(return_value = response_mock)
+        package_name : str = "non_existent_package"       
+        
+        # Act
+        badge_fetcher = PyPiBadgeFetcher(get_function = get_function_mock)
+        actual : Optional[list[Badge]] = badge_fetcher.try_fetch(package_name = package_name)
+        
+        # Assert
+        self.assertIsNone(actual)
 
 # Main
 if __name__ == "__main__":

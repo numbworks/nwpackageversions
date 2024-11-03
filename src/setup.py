@@ -6,7 +6,7 @@ from setuptools import setup
 # INFORMATION
 MODULE_ALIAS : str = "nwpv"
 MODULE_NAME : str = "nwpackageversions"
-MODULE_VERSION : str = "1.2.0"
+MODULE_VERSION : str = "1.6.0"
 
 # SETUP
 setup(
@@ -17,7 +17,8 @@ setup(
     url = "https://github.com/numbworks/nwpackageversions",
     py_modules = [ MODULE_NAME ],
     install_requires = [
-        "requests==2.32.3"
+        "requests==2.32.3",
+        "lxml==5.3.0"
     ],
     python_requires = ">=3.12",
     license = "MIT"
