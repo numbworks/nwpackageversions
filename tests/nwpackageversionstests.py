@@ -275,6 +275,7 @@ class FSessionTestCase(unittest.TestCase):
         )
 
         self.mrr_formatter : Callable[[Release], str] = lambda mrr : f"('{mrr.version}', '{mrr.date.strftime("%Y-%m-%d")}')"
+        self.badge_formatter : Callable[[Optional[list[Badge]]], str] = lambda badges : str(None) if badges is None else str(len(badges))
 
         self.xml_items: list[XMLItem] = [
             XMLItem(title="2.1.2", link="https://pypi.org/project/numpy/2.1.2/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Sat, 05 Oct 2024 18:28:18 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sat, 05 Oct 2024 18:28:18 GMT"),
@@ -283,11 +284,17 @@ class FSessionTestCase(unittest.TestCase):
             XMLItem(title="2.1.0", link="https://pypi.org/project/numpy/2.1.0/", description="Fundamental package for array computing in Python", author=None, pubdate=datetime.strptime("Sun, 18 Aug 2024 21:39:07 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sun, 18 Aug 2024 21:39:07 GMT")
         ]
 
+        self.badges : list[Badge] = [
+            Badge(package_name = "numpy", version = "2.1.2alpha", label = "pre-release"),
+            Badge(package_name = "numpy", version = "2.0.2d0", label = "yanked")
+        ]
+
         self.f_session : FSession = FSession(
             package_name = self.package_name,
             most_recent_release = self.most_recent_release,
             releases = self.releases,
-            xml_items = self.xml_items
+            xml_items = self.xml_items,
+            badges = self.badges
         )
     def test_fsession_shouldinitializeasexpected_wheninvoked(self):
 	
@@ -300,18 +307,45 @@ class FSessionTestCase(unittest.TestCase):
         self.assertEqual(self.f_session.most_recent_release.date, self.most_recent_release.date)
         self.assertEqual(self.f_session.releases, self.releases)
         self.assertEqual(self.f_session.xml_items, self.xml_items)
-    def test_fsession_shouldreturnexpectedstring_whenargumentsarenotnone(self):
+        self.assertEqual(self.f_session.badges, self.badges)
+    def test_fsession_shouldreturnexpectedstring_whenbadgesisnotnone(self):
         
 		# Arrange
         expected: str = (
             "{ 'package_name': 'numpy', "
             f"'most_recent_release': '{self.mrr_formatter(self.most_recent_release)}', "
             "'releases': '4', "
-            "'xml_items': '4' }"
-        )		
+            "'xml_items': '4', "
+            f"'badges': '{self.badge_formatter(self.badges)}' "
+            "}"
+        )
 		
         # Act
         actual : str = str(self.f_session)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_fsession_shouldreturnexpectedstring_whenbadgesisnone(self):
+        
+		# Arrange
+        expected: str = (
+            "{ 'package_name': 'numpy', "
+            f"'most_recent_release': '{self.mrr_formatter(self.most_recent_release)}', "
+            "'releases': '4', "
+            "'xml_items': '4', "
+            "'badges': 'None' "
+            "}"
+        )
+		
+        # Act
+        f_session : FSession = FSession(
+            package_name = self.package_name,
+            most_recent_release = self.most_recent_release,
+            releases = self.releases,
+            xml_items = self.xml_items,
+            badges = None
+        )
+        actual : str = str(f_session)
 
         # Assert
         self.assertEqual(actual, expected)
@@ -786,7 +820,8 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
             package_name = "pandas",
             most_recent_release = self.releases[0],
             releases = self.releases,
-            xml_items = self.xml_items
+            xml_items = self.xml_items,
+            badges = None
         )
         
         # Act
@@ -828,7 +863,8 @@ class RequirementCheckerTestCase(unittest.TestCase):
             releases = [self.release1],
             xml_items = [
                 XMLItem(title="2.1.2", link="https://pypi.org/project/pandas/2.2.3/", description="", author=None, pubdate=datetime.strptime("Sat, 05 Oct 2024 18:28:18 GMT", "%a, %d %b %Y %H:%M:%S %Z"), pubdate_str="Sat, 05 Oct 2024 18:28:18 GMT"),
-            ]
+            ],
+            badges = None
         )
 
         self.requirement_detail1 : RequirementDetail = RequirementDetail(
@@ -914,8 +950,8 @@ class RequirementCheckerTestCase(unittest.TestCase):
 
         release1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2024, 1, 1))
         release2 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 1, 2))      
-        f_session_1: FSession = FSession(package_name = "requests", most_recent_release = release1, releases = [ release1 ], xml_items = [])
-        f_session_2: FSession = FSession(package_name = "black", most_recent_release = release2, releases = [ release2 ], xml_items = [])
+        f_session_1: FSession = FSession(package_name = "requests", most_recent_release = release1, releases = [ release1 ], xml_items = [], badges = None)
+        f_session_2: FSession = FSession(package_name = "black", most_recent_release = release2, releases = [ release2 ], xml_items = [], badges = None)
 
         package_loader_mock : LocalPackageLoader = Mock()
         package_loader_mock.load.return_value = l_session
@@ -1097,7 +1133,7 @@ class BadgeTestCase(unittest.TestCase):
         self.version : str = "2.1.2alpha"
         self.label : Literal["pre-release", "yanked"] = "pre-release"
 
-        self.badge : Badge = Badge(package_name = self.package_name, version = self.version, label=self.label)
+        self.badge : Badge = Badge(package_name = self.package_name, version = self.version, label = self.label)
     def test_badge_shouldinitializeasexpected_wheninvoked(self) -> None:
 
         # Arrange

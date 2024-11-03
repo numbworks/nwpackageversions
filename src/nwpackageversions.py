@@ -117,17 +117,20 @@ class FSession():
     most_recent_release : Release
     releases : list[Release]
     xml_items : list[XMLItem]
+    badges : Optional[list[Badge]]
 
     def __str__(self):
 
         mrr_formatter : Callable[[Release], str] = lambda mrr : f"('{mrr.version}', '{mrr.date.strftime("%Y-%m-%d")}')"
+        badge_formatter : Callable[[Optional[list[Badge]]], str] = lambda badges : str(None) if badges is None else str(len(badges))
 
         return str(
                 "{ "
                 f"'package_name': '{self.package_name}', "
                 f"'most_recent_release': '{mrr_formatter(self.most_recent_release)}', "
                 f"'releases': '{len(self.releases)}', "
-                f"'xml_items': '{len(self.xml_items)}'"
+                f"'xml_items': '{len(self.xml_items)}', "
+                f"'badges': '{badge_formatter(self.badges)}'"
                 " }"                
             )
 @dataclass(frozen = True)
@@ -768,17 +771,19 @@ class PyPiReleaseFetcher():
         '''
 
         return (xml_item.title not in badge_versions)
-    def __process_stable_releases(self, package_name : str, xml_items_clean : list[XMLItem], only_stable_releases : bool) -> list[XMLItem]:
+    def __process_stable_releases(self, package_name : str, xml_items_clean : list[XMLItem], only_stable_releases : bool) -> Tuple[list[XMLItem], Optional[list[Badge]]]:
 
         '''Encapsulates all the logic related to stable releases.'''
 
+        badges : Optional[list[Badge]] = None
+
         if only_stable_releases == False:
-            return xml_items_clean
+            return (xml_items_clean, badges)
         
-        badges : Optional[list[Badge]] = self.__badge_fetcher.try_fetch(package_name = package_name)       
+        badges = self.__badge_fetcher.try_fetch(package_name = package_name)       
         
         if badges is None:
-            return xml_items_clean
+            return (xml_items_clean, badges)
 
         badge_versions : list[str] = [badge.version for badge in badges]
         xml_items_clean = self.__filter(
@@ -786,7 +791,7 @@ class PyPiReleaseFetcher():
             function = lambda x : self.__is_stable_release(xml_item = x, badge_versions = badge_versions)
         )
 
-        return xml_items_clean
+        return (xml_items_clean, badges)
 
     def fetch(self, package_name : str, only_stable_releases : bool) -> FSession:
 
@@ -803,7 +808,7 @@ class PyPiReleaseFetcher():
         xml_items_clean : list[XMLItem] = copy.deepcopy(xml_items_raw)
         xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_title(xml_item = x))
         xml_items_clean = self.__filter(items = xml_items_clean, function = lambda x : self.__has_pubdate(xml_item = x))
-        xml_items_clean = self.__process_stable_releases(package_name = package_name, xml_items_clean = xml_items_clean, only_stable_releases = only_stable_releases)
+        xml_items_clean, badges = self.__process_stable_releases(package_name = package_name, xml_items_clean = xml_items_clean, only_stable_releases = only_stable_releases)
             
         if len(xml_items_clean) == 0:
             raise Exception(_MessageCollection.no_suitable_xml_items_found(url = url))
@@ -815,7 +820,8 @@ class PyPiReleaseFetcher():
             package_name = package_name,
             most_recent_release = self.__get_most_recent(releases = releases),
             releases = releases,
-            xml_items = xml_items_raw
+            xml_items = xml_items_raw,
+            badges = badges
         )
 
         return f_session
