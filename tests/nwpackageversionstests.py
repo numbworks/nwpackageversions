@@ -1255,6 +1255,23 @@ class BadgeTestCase(unittest.TestCase):
         # Assert
         self.assertEqual(actual_str, expected)
         self.assertEqual(actual_repr, expected)
+class PyPiBadgeFetcherTestCase(unittest.TestCase):
+
+    def setUp(self) -> None:
+
+        self.badge_fetcher : PyPiBadgeFetcher = PyPiBadgeFetcher()
+
+    def test_formaturl_shouldreturnexpectedurl_wheninvoked(self) -> None:
+
+        # Arrange
+        package_name : str = "pandas"
+        expected : str = "https://pypi.org/project/pandas/#history"
+        
+        # Act
+        actual : str = self.badge_fetcher._PyPiBadgeFetcher__format_url(package_name = package_name)  # type: ignore
+        
+        # Assert
+        self.assertEqual(actual, expected)
 
 # Main
 if __name__ == "__main__":
