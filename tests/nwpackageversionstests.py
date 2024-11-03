@@ -3,6 +3,8 @@ import os
 import sys
 import unittest
 from datetime import datetime
+from lxml import html
+from lxml.html import HtmlElement
 from parameterized import parameterized
 from requests import Response
 from time import time
@@ -1261,6 +1263,75 @@ class PyPiBadgeFetcherTestCase(unittest.TestCase):
 
         self.badge_fetcher : PyPiBadgeFetcher = PyPiBadgeFetcher()
     
+        self.html_response : str = str(
+            '<div class="release-timeline">'
+            '<div class="release release--latest">'
+            '<div class="release__meta"></div>'
+            '<div class="release__graphic">'
+            '<div class="release__line"></div>'
+            '<img class="release__node" alt="" src="https://pypi.org/static/images/white-cube.2351a86c.svg">'
+            '</div>'
+            '<a class="card release__card" href="/project/ipykernel/7.0.0a0/">'
+            '<p class="release__version">7.0.0a0'
+            '<span class="badge badge--warning">pre-release</span>'
+            '</p>'
+            '<p class="release__version-date">'
+            '<time datetime="2024-10-22T08:26:22+0000">Oct 22, 2024</time>'
+            '</p>'
+            '</a>'
+            '</div>'
+            '<div class="release release--current">'
+            '<div class="release__meta"><span class="badge">This version</span></div>'
+            '<div class="release__graphic">'
+            '<div class="release__line"></div>'
+            '<img class="release__node" alt="" src="https://pypi.org/static/images/blue-cube.572a5bfb.svg">'
+            '</div>'
+            '<a class="card release__card" href="/project/ipykernel/6.29.5/">'
+            '<p class="release__version">6.29.5</p>'
+            '<p class="release__version-date">'
+            '<time datetime="2024-07-01T14:07:19+0000">Jul 1, 2024</time>'
+            '</p>'
+            '</a>'
+            '</div>'
+            '<div class="release">'
+            '<div class="release__meta"></div>'
+            '<div class="release__graphic">'
+            '<div class="release__line"></div>'
+            '<img class="release__node" alt="" src="https://pypi.org/static/images/white-cube.2351a86c.svg">'
+            '</div>'
+            '<a class="card release__card" href="/project/ipykernel/6.29.4/">'
+            '<p class="release__version">6.29.4</p>'
+            '<p class="release__version-date">'
+            '<time datetime="2024-03-27T22:25:41+0000">Mar 27, 2024</time>'
+            '</p>'
+            '</a>'
+            '</div>'
+            '<div class="release__graphic">'
+            '<div class="release__line"></div>'
+            '<img class="release__node" alt="" src="https://pypi.org/static/images/white-cube.2351a86c.svg">'
+            '</div>'
+            '<a class="card release__card" href="/project/ipykernel/6.27.0/">'
+            '<p class="release__version">6.27.0'
+            '<span class="badge badge--danger">yanked</span>'
+            '</p>'
+            '<p class="release__version-date">'
+            '<time datetime="2023-11-21T11:23:46+0000">Nov 21, 2023</time>'
+            '</p>'
+            '<div class="callout-block callout-block--danger release__yanked-reason">'
+            '<p>Reason this release was yanked:</p><p>broke %edit magic</p>'
+            '</div>'
+            '</a>'
+            '</div>'
+        ) 
+        self.package_name : str = "ipykernel"
+        self.badges : list[Badge] = [
+            Badge(package_name = "ipykernel", version = "7.0.0a0", label = "pre-release"),
+            Badge(package_name = "ipykernel", version = "6.27.0", label = "yanked")
+        ]
+
+        self.response_mock : Response = Mock(content = self.html_response)       
+        self.get_function_mock : Callable[[str], Response] = Mock(return_value = self.response_mock)
+
     def test_pypibadgefetcher_shouldinitializeasexpected_wheninvoked(self) -> None:
         
         # Arrange
@@ -1279,6 +1350,28 @@ class PyPiBadgeFetcherTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(actual, expected)
+    def test_tryfetch_shouldreturnexpectedbadges_wheninvoked(self) -> None:
+        
+        # Arrange       
+        # Act
+        badge_fetcher = PyPiBadgeFetcher(get_function = self.get_function_mock)
+        actual : Optional[list[Badge]] = badge_fetcher.try_fetch(package_name = self.package_name)
+        
+        # Assert
+        self.assertTrue(SupportMethodProvider().are_lists_of_badges_equal(list1 = actual, list2 = self.badges))
+    def test_tryfetch_shouldreturnnone_whennobadgesfound(self) -> None:
+        
+        # Arrange
+        response_mock : Response = Mock(content = "<html></html>")
+        get_function_mock : Callable[[str], Response] = Mock(return_value = response_mock)
+        package_name : str = "non_existent_package"       
+        
+        # Act
+        badge_fetcher = PyPiBadgeFetcher(get_function = get_function_mock)
+        actual : Optional[list[Badge]] = badge_fetcher.try_fetch(package_name = package_name)
+        
+        # Assert
+        self.assertIsNone(actual)
 
 # Main
 if __name__ == "__main__":
