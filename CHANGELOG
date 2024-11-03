@@ -1,6 +1,6 @@
 v1.6.0
 - Library:
-	- Feature: added support for badges (PyPiBadgeFetcher).
+	- Feature: added support for badges (PyPiBadgeFetcher, only_stable_releases).
 - Documentation:
 	- Feature: updated to v1.6.0.
 
