@@ -762,7 +762,6 @@ class PyPiReleaseFetcher():
         most_recent_release : Release = releases[0]
 
         return most_recent_release
-
     def __is_stable_release(self, xml_item : XMLItem, badge_versions : list[str]) -> bool:
 
         '''

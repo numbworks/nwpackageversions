@@ -892,6 +892,26 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
+    def test_fetch_shouldreturnexpectedfsession_whenonlystablereleasesistrueandtrycatchreturnsnone(self) -> None:
+        
+        # Arrange
+        badge_fetcher_mock : PyPiBadgeFetcher = Mock()
+        badge_fetcher_mock.try_fetch.return_value = None
+
+        expected : FSession = FSession(
+            package_name = "pandas",
+            most_recent_release = self.releases[0],
+            releases = self.releases,
+            xml_items = self.xml_items,
+            badges = None
+        )        
+        
+        # Act
+        release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(get_function = self.get_function_mock, badge_fetcher = badge_fetcher_mock)
+        actual : FSession = release_fetcher.fetch(package_name = "pandas", only_stable_releases = True)
+
+        # Assert
+        self.assertEqual(actual, expected)
 
     @parameterized.expand([
         ["Fri, 20 Sep 2024 13:08:42 GMT", datetime(2024, 9, 20, 13, 8, 42)],
