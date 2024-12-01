@@ -1,3 +1,10 @@
+v1.8.0
+- Library:
+	- Feature: makefile added.
+	- Bugfix: types fixed according to mypy analysis.
+- Documentation:
+	- Feature: updated to v1.8.0.
+
 v1.6.0
 - Library:
 	- Feature: added support for badges (PyPiBadgeFetcher, only_stable_releases).

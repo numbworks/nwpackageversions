@@ -9,6 +9,7 @@ Contact: numbworks@gmail.com
 | 2024-10-22 | numbworks | Updated to v1.1.0. |
 | 2024-10-24 | numbworks | Updated to v1.2.0. |
 | 2024-10-31 | numbworks | Updated to v1.6.0. |
+| 2024-12-01 | numbworks | Updated to v1.8.0. |
 
 ## Introduction
 
@@ -108,13 +109,13 @@ To try out if this Python module installs as a package as expected in the projec
 
 In order to do so:
 
-1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.6.0`;
+1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.8.0`;
 
 2. Open your terminal application of choice and type the following commands:
 
     ```
     docker run -it python:3.12.5-bookworm /bin/bash
-    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.6.0#egg=nwpackageversions&subdirectory=src'
+    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.8.0#egg=nwpackageversions&subdirectory=src'
     pip show nwpackageversions | grep "Version"
     ```
 
@@ -138,6 +139,53 @@ In order to do so:
 6. Done!
 
 Note: if something goes wrong, don't panic - Github releases can be deleted and re-created as many times as you want.
+
+## The makefile
+
+This software package ships with a `makefile` that include all the pre-release verification actions:
+
+1. Launch Visual Studio Code;
+2. Click on <ins>File</ins> > <ins>Open folder</ins> > `nwpackageversions`;
+3. <ins>Terminal</ins> > <ins>New Terminal</ins>;
+4. Run the following commands:
+
+    ```
+    cd /workspaces/nwpackageversions/scripts
+    make -f makefile <target_name>
+    ```
+5. Done!
+
+The avalaible target names are:
+
+| Target Name | Description |
+|---|---|
+| type-verbose | Runs a type verification task and logs everything. |
+| coverage-verbose | Runs a unit test coverage calculation task and logs the % per class. |
+| tryinstall-verbose | Creates a venv and tries to build+install this package to verify everything is ok. |
+| all-concise | Runs a batch of verification tasks and logs one summary line for each of them. |
+
+The expected outcome for `all-concise` is:
+
+```
+MODULE_NAME: nwpackageversions
+MODULE_VERSION: 1.8.0
+COVERAGE_THRESHOLD: 70%
+[WARNING] type-concise: not passed! '1' error(s) found!
+[OK] howtorelease-concise: 'How-to Release' updated to current version!
+[WARNING] changelog-concise: 'CHANGELOG' not updated to current version!
+[OK] setup-concise: 'setup.py' updated to current version!
+[OK] coverage-concise: unit test coverage >= 70%.
+```
+
+Considering the old-fashioned syntax adopted by `make`, here a summary of its less intuitive aspects:
+
+| Aspect | Description |
+|---|---|
+| `.PHONY` | All the targets that need to be called from another target need to be listed here. |
+| `SHELL := /bin/bash` | By default, `make` uses `sh`, which doesn't support some functions such as string comparison. |
+| `@` | By default, `make` logs all the commands included in the target. The `@` disables this behaviour. |
+| `$$` | Necessary to escape `$`. |
+| `$@` | Variable that stores the target name. |
 
 ## Known Issues - "Import nwpackageversions could not be resolved Pylance (reportMissingImports)"
 
