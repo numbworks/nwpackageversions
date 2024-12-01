@@ -17,3 +17,5 @@ RUN wget https://github.com/jgm/pandoc/releases/download/3.4/pandoc-3.4-1-amd64.
 
 # MAKEFILE
 RUN pip install mypy==1.13.0
+RUN pip install types-requests==2.32.0.20241016
+RUN pip install lxml-stubs==0.5.1
