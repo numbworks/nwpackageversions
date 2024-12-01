@@ -16,7 +16,7 @@ makefile-info:
 
 type-verbose:
 	@clear; \
-	mypy $(ROOT_DIR)/src/$(MODULE_NAME).py;
+	mypy $(ROOT_DIR)/src/$(MODULE_NAME).py --check-untyped-defs;
 coverage-verbose:
 	@clear; \
 	cd $(ROOT_DIR)/tests/; \
