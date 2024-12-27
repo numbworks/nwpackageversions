@@ -586,7 +586,7 @@ class PyPiBadgeFetcher():
         if len(versions) == 0: 
             return None
 
-        label_pattern : str = "//p[@class='release__version'][span]/span/text()"
+        label_pattern : str = "//p[@class='release__version']/span[1]/text()"
         labels : list[str] = self.__extract_and_strip_text(tree = tree, pattern = label_pattern)
 
         versions_labels : list[Tuple[str, str]] = list(zip(versions, labels, strict = True))
@@ -936,7 +936,7 @@ class RequirementChecker():
 
         return requirement_summary
 
-    def check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> RequirementSummary:
+    def check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5, sort_requirement_details : bool = False) -> RequirementSummary:
 
         '''
             This method:
@@ -971,6 +971,9 @@ class RequirementChecker():
             only_stable_releases = only_stable_releases
         )
 
+        if sort_requirement_details:
+            requirement_details.sort(key = lambda x : x.is_version_matching)
+
         self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
         self.__list_logging_function(self.__logging_function, requirement_details)
         self.__logging_function(_MessageCollection.starting_creation_requirement_summary())
@@ -982,7 +985,7 @@ class RequirementChecker():
         self.__logging_function(_MessageCollection.status_checking_operation_completed())
 
         return requirement_summary
-    def try_check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> Optional[RequirementSummary]:
+    def try_check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5, sort_requirement_details : bool = False) -> Optional[RequirementSummary]:
 
         '''
             It performs the same operations as check().
@@ -991,7 +994,12 @@ class RequirementChecker():
 
         try:
             
-            return self.check(file_path = file_path, only_stable_releases = only_stable_releases, waiting_time = waiting_time)
+            return self.check(
+                file_path = file_path, 
+                only_stable_releases = only_stable_releases, 
+                waiting_time = waiting_time, 
+                sort_requirement_details = sort_requirement_details
+                )
 
         except Exception as e:
 
