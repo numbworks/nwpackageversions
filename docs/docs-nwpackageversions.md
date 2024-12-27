@@ -10,6 +10,7 @@ Contact: numbworks@gmail.com
 | 2024-10-24 | numbworks | Updated to v1.2.0. |
 | 2024-10-31 | numbworks | Updated to v1.6.0. |
 | 2024-12-01 | numbworks | Updated to v1.8.0. |
+| 2024-12-27 | numbworks | Updated to v1.8.1. |
 
 ## Introduction
 
@@ -109,13 +110,13 @@ To try out if this Python module installs as a package as expected in the projec
 
 In order to do so:
 
-1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.8.0`;
+1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.8.1`;
 
 2. Open your terminal application of choice and type the following commands:
 
     ```
     docker run -it python:3.12.5-bookworm /bin/bash
-    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.8.0#egg=nwpackageversions&subdirectory=src'
+    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.8.1#egg=nwpackageversions&subdirectory=src'
     pip show nwpackageversions | grep "Version"
     ```
 
@@ -168,7 +169,7 @@ The expected outcome for `all-concise` is:
 
 ```
 MODULE_NAME: nwpackageversions
-MODULE_VERSION: 1.8.0
+MODULE_VERSION: 1.8.1
 COVERAGE_THRESHOLD: 70%
 [WARNING] type-concise: not passed! '1' error(s) found!
 [OK] howtorelease-concise: 'How-to Release' updated to current version!
@@ -226,6 +227,35 @@ C:\Users\Rubèn\src\nwpackageversions\src\
 
 6. restart Visual Studio Code;
 7. Done!
+
+## Appendix - The "label_pattern"
+
+The `PyPiBadgeFetcher.try_fetch()` method adopts the following two XPath patterns:
+
+```
+version_pattern : str = "//p[@class='release__version'][span]/text()"
+label_pattern : str = "//p[@class='release__version']/span[1]/text()"
+```
+
+The `[1]` ("take only the first span element") in the second pattern is necessary due of some packages having more than one badge per version - i.e [openpyxl](https://pypi.org/project/openpyxl/#history):
+
+```
+...
+<p class="release__version">
+   3.2.0b1
+   <span class="badge badge--warning">pre-release</span>
+   <span class="badge badge--danger">yanked</span>
+</p>
+<p class="release__version">
+   2.6.0b1
+   <span class="badge badge--warning">pre-release</span>
+</p>
+<p class="release__version">
+   2.6.0a1
+   <span class="badge badge--warning">pre-release</span>
+</p>
+...
+```
 
 ## Appendix - Example files
 
