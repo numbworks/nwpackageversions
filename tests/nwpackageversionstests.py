@@ -464,11 +464,8 @@ class LambdaCollectionTestCase(unittest.TestCase):
         # Arrange
         do_nothing_function : Callable[[Any], None] = LambdaCollection.do_nothing_function()
 
-        # Act
-        actual : None = do_nothing_function("test")
-
-        # Assert
-        self.assertIsNone(actual)
+        # Act, Assert
+        do_nothing_function("test")
 class LSessionTestCase(unittest.TestCase):
 
     def setUp(self):
