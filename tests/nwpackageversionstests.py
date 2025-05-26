@@ -390,7 +390,7 @@ class LambdaCollectionTestCase(unittest.TestCase):
         # Arrange
         expected_sc : int = 200
         expected_text : str = '<rss version="2.0"></rss>'
-        response_mock : Response = MagicMock(spec = Response)
+        response_mock : MagicMock = MagicMock(spec = Response)
         response_mock.status_code = expected_sc
         response_mock.text = expected_text
         url : str = "https://pypi.org/rss/project/numpy/releases.xml"
@@ -848,7 +848,7 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         # Arrange
         xml_content : str = self.xml_content.replace("<title>2.2.3</title>", "<title></title>")
         xml_content = xml_content.replace("<pubDate>Wed, 10 Apr 2024 19:44:10 GMT</pubDate>", "")       
-        xml_response : Response = Mock()
+        xml_response : Mock = Mock(spec = Response)
         xml_response.text = xml_content
 
         get_function_mock : Callable[[str], Response] = Mock(return_value = xml_response)
