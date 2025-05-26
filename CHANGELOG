@@ -1,3 +1,9 @@
+v1.8.2
+- Library:
+	- Maintenance: alignment of this package with all the other nw packages.
+- Documentation:
+	- Feature: updated to v1.8.2.
+
 v1.8.1
 - Library:
 	- Bugfix: 'zip() argument 2 is longer than argument 1' when package_name == "openpyxl".

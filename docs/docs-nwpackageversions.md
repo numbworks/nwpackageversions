@@ -11,10 +11,11 @@ Contact: numbworks@gmail.com
 | 2024-10-31 | numbworks | Updated to v1.6.0. |
 | 2024-12-01 | numbworks | Updated to v1.8.0. |
 | 2024-12-27 | numbworks | Updated to v1.8.1. |
+| 2025-05-26 | numbworks | Updated to v1.8.2. |
 
 ## Introduction
 
-`nwpackageversions` is a Python library that helps with retrieving package information from PyPi.org and comparing them with what you have installed locally.
+`nwpackageversions` is a library that helps with retrieving package information from PyPi.org and comparing them with what you have installed locally.
 
 ## Getting Started
 
@@ -104,43 +105,6 @@ To check for the updatability of the dependencies this library is built upon, yo
 5. You will get a log containing a list of up-to-date and out-of-date dependencies, that you can use to decide which update to perform.
 6. Done!
 
-## How-To Release
-
-To try out if this Python module installs as a package as expected in the projects that have it as dependency, you'll need to simulate a release. 
-
-In order to do so:
-
-1. Once you pushed all the changes to Gihub and merged them to master, create a new release and add a version tag to it - i.e. `v1.8.1`;
-
-2. Open your terminal application of choice and type the following commands:
-
-    ```
-    docker run -it python:3.12.5-bookworm /bin/bash
-    pip install 'git+https://github.com/numbworks/nwpackageversions.git@v1.8.1#egg=nwpackageversions&subdirectory=src'
-    pip show nwpackageversions | grep "Version"
-    ```
-
-3. Perform an additional verification by using the Python interpreter in the container:
-
-    ```
-    python3
-    from nwpackageversions import PyPiReleaseManager
-    release_manager : PyPiReleaseManager = PyPiReleaseManager()
-    exit()
-    ```
-
-4. Exit from the container by typing `exit`;
-5. Remove the stopped container using the following commands:
-
-    ```
-    docker ps -a
-    docker rm {container_id}
-    ```
-
-6. Done!
-
-Note: if something goes wrong, don't panic - Github releases can be deleted and re-created as many times as you want.
-
 ## The makefile
 
 This software package ships with a `makefile` that include all the pre-release verification actions:
@@ -169,7 +133,7 @@ The expected outcome for `all-concise` is:
 
 ```
 MODULE_NAME: nwpackageversions
-MODULE_VERSION: 1.8.1
+MODULE_VERSION: 1.8.2
 COVERAGE_THRESHOLD: 70%
 [WARNING] type-concise: not passed! '1' error(s) found!
 [OK] howtorelease-concise: 'How-to Release' updated to current version!

@@ -3,7 +3,7 @@
 SHELL := /bin/bash
 ROOT_DIR := $(shell cd .. && pwd)
 MODULE_NAME = "nwpackageversions"
-MODULE_VERSION = "1.8.1"
+MODULE_VERSION = "1.8.2"
 COVERAGE_THRESHOLD = 70
 
 # TARGETS
