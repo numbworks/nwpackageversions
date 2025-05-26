@@ -19,7 +19,7 @@ Contact: numbworks@gmail.com
 
 ## Getting Started
 
-To inspect the functionalities of this Python module on Windows and Linux:
+To run this application on Windows and Linux:
 
 1. Download and install [Visual Studio Code](https://code.visualstudio.com/Download);
 2. Download and install [Docker](https://www.docker.com/products/docker-desktop/);
@@ -36,19 +36,27 @@ To inspect the functionalities of this Python module on Windows and Linux:
 
     - [Python](https://marketplace.visualstudio.com/items?itemName=ms-python.python)
     - [Pylance](https://marketplace.visualstudio.com/items?itemName=ms-python.vscode-pylance)
+    - [Jupyter](https://marketplace.visualstudio.com/items?itemName=ms-toolsai.jupyter)
     - [Remote Development](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.vscode-remote-extensionpack)
     - [Docker](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-docker)
 
-6. In order for Pylance to perform type checking, click on <ins>File</ins> > <ins>Preferences</ins> > <ins>Settings</ins> and set the `python.analysis.typeCheckingMode` setting to `basic`;
-7. Click on <ins>File</ins> > <ins>Open folder</ins> > `nwpackageversions`;
-8. Click on <ins>View</ins> > <ins>Command Palette</ins> and type:
+6. In order for the Jupyter Notebook to automatically detect changes in the underlying library, click on <ins>File</ins> > <ins>Preferences</ins> > <ins>Settings</ins> and change the following setting as below:
+
+    ```
+    "jupyter.runStartupCommands": [
+        "%load_ext autoreload", "%autoreload 2"
+    ]
+    ```
+
+7. In order for Pylance to perform type checking, set the `python.analysis.typeCheckingMode` setting to `basic`;
+8. Click on <ins>File</ins> > <ins>Open folder</ins> > `nwcommitaverages`;
+9. Click on <ins>View</ins> > <ins>Command Palette</ins> and type:
 
     ```
     > Dev Container: Reopen in Container
     ```
 
-9. Wait some minutes for the container defined in the <ins>.devcointainer</ins> folder to be built;
-10. Open the Python file (<ins>src/nwpackageversions.py</ins>);
+10. Wait some minutes for the container defined in the <ins>.devcointainer</ins> folder to be built;
 11. Done!
 
 ## Demo
@@ -86,25 +94,6 @@ To calculate the total unit test coverage in Visual Studio Code (while still con
 
 4. Done!
 
-## Dependency Update
-
-To check for the updatability of the dependencies this library is built upon, you can use the library itself. Please:
-
-1. Launch Visual Studio Code;
-2. Click on <ins>File</ins> > <ins>Open folder</ins> > `nwpackageversions`;
-3. <ins>Terminal</ins> > <ins>New Terminal</ins>;
-4. Run the following commands to perform the requirement check (it requires an internet connection):
-
-    ```
-    cd src
-    python3
-    from nwpackageversions import RequirementChecker
-    RequirementChecker().check("/workspaces/nwpackageversions/.devcontainer/Dockerfile")
-    ```
-
-5. You will get a log containing a list of up-to-date and out-of-date dependencies, that you can use to decide which update to perform.
-6. Done!
-
 ## The makefile
 
 This software package ships with a `makefile` that include all the pre-release verification actions:
@@ -126,7 +115,12 @@ The avalaible target names are:
 |---|---|
 | type-verbose | Runs a type verification task and logs everything. |
 | coverage-verbose | Runs a unit test coverage calculation task and logs the % per class. |
-| tryinstall-verbose | Creates a venv and tries to build+install this package to verify everything is ok. |
+| tryinstall-verbose | Simulates a "pip install" and logs everything. |
+| compile-verbose | Runs "python -m py_compile" command against the module file. |
+| unittest-verbose | Runs "python" command against the test files. |
+| codemetrics-verbose | Runs a cyclomatic complexity analysis against all the nw*.py files in /src. |
+| update-codecoverage | Updates the codecoverage.txt/.svg files according to the total unit test coverage. |
+| create-classdiagram | Creates a class diagram in Mermaid format that shows only relationships. |
 | all-concise | Runs a batch of verification tasks and logs one summary line for each of them. |
 
 The expected outcome for `all-concise` is:
@@ -135,14 +129,17 @@ The expected outcome for `all-concise` is:
 MODULE_NAME: nwpackageversions
 MODULE_VERSION: 1.8.2
 COVERAGE_THRESHOLD: 70%
-[WARNING] type-concise: not passed! '1' error(s) found!
-[OK] howtorelease-concise: 'How-to Release' updated to current version!
-[WARNING] changelog-concise: 'CHANGELOG' not updated to current version!
+[OK] type-concise: passed!
+[OK] changelog-concise: 'CHANGELOG' updated to current version!
 [OK] setup-concise: 'setup.py' updated to current version!
 [OK] coverage-concise: unit test coverage >= 70%.
+[OK] tryinstall-concise: installation process works.
+[OK] compile-concise: compiling the library throws no issues.
+[OK] unittest-concise: '30' tests found and run.
+[OK] codemetrics-concise: the cyclomatic complexity is excellent ('A').
 ```
 
-Considering the old-fashioned syntax adopted by `make`, here a summary of its less intuitive aspects:
+Considering the old-fashioned syntax adopted by both `make` and `bash`, here a summary of its less intuitive aspects:
 
 | Aspect | Description |
 |---|---|
@@ -151,6 +148,7 @@ Considering the old-fashioned syntax adopted by `make`, here a summary of its le
 | `@` | By default, `make` logs all the commands included in the target. The `@` disables this behaviour. |
 | `$$` | Necessary to escape `$`. |
 | `$@` | Variable that stores the target name. |
+| `if [[ ... ]]` | Double square brackets to enable pattern matching. |
 
 ## Known Issues - "Import nwpackageversions could not be resolved Pylance (reportMissingImports)"
 
