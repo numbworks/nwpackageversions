@@ -230,9 +230,9 @@ class LambdaCollection():
         '''Does nothing.'''
 
         return lambda x : None
-class _MessageCollection():
+class _MessageCollectionLocalPackageLoader():
 
-    '''Collects all the messages used for logging and for the exceptions.'''
+    '''Collects all the messages used for logging and for the exceptions used by LocalPackageLoader.'''
 
     @staticmethod
     def no_loading_strategy_found(file_path : str) -> str:
@@ -240,7 +240,10 @@ class _MessageCollection():
     @staticmethod
     def no_packages_found(file_path : str) -> str:
         return f"No packages found in '{file_path}'. Please open the documentation to check the expected layout of the supported files."
-    
+class _MessageCollectionRequirementChecker():
+
+    '''Collects all the messages used for logging and for the exceptions used by RequirementChecker.'''
+
     @staticmethod
     def waiting_time_cant_be_less_than(waiting_time : int, expected : int) -> str:
         return f"Waiting time ('{str(waiting_time)}') can't be less than {expected} seconds."
@@ -282,7 +285,7 @@ class _MessageCollection():
     @staticmethod
     def only_stable_releases_is(only_stable_releases : bool) -> str:
         return f"'only_stable_releases' is: '{str(only_stable_releases)}'."
-    
+
     @staticmethod
     def status_evaluation_operation_successfully_loaded() -> str:
         return "The status evaluation operation has been successfully completed."
@@ -294,11 +297,17 @@ class _MessageCollection():
         return "The requirement summary has been successfully created."
     @staticmethod
     def status_checking_operation_completed() -> str:
-        return "The status checking operation has been completed."       
+        return "The status checking operation has been completed."
+class _MessageCollectionPyPiReleaseFetcher():
+
+    '''Collects all the messages used for logging and for the exceptions used by PyPiReleaseFetcher.'''
 
     @staticmethod
     def no_suitable_xml_items_found(url : str) -> str:
         return f"No suitable XML items found in '{url}'. The application is not able to establish the most recent release."
+class _MessageCollectionLanguageChecker():
+
+    '''Collects all the messages used for logging and for the exceptions used by LanguageChecker.'''
 
     @staticmethod
     def __format_version(version : Tuple[int, int, int]) -> str:
@@ -306,16 +315,32 @@ class _MessageCollection():
         "Converts version to string."
 
         return f"{version[0]}.{version[1]}.{version[2]}"
+    
     @staticmethod
     def installed_python_version_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
-        installed_str : str = _MessageCollection.__format_version(version = installed)
-        required_str : str = _MessageCollection.__format_version(version = required)
+        installed_str : str = _MessageCollectionLanguageChecker.__format_version(version = installed)
+        required_str : str = _MessageCollectionLanguageChecker.__format_version(version = required)
         return f"The installed Python version is matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
+    
     @staticmethod
     def installed_python_version_not_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
-        installed_str : str = _MessageCollection.__format_version(version = installed)
-        required_str : str = _MessageCollection.__format_version(version = required)
+        installed_str : str = _MessageCollectionLanguageChecker.__format_version(version = installed)
+        required_str : str = _MessageCollectionLanguageChecker.__format_version(version = required)
         return f"Warning! The installed Python is not matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
+class _MessageCollection(
+    _MessageCollectionLocalPackageLoader,
+    _MessageCollectionRequirementChecker,
+    _MessageCollectionPyPiReleaseFetcher,
+    _MessageCollectionLanguageChecker):
+
+    '''Collects all the messages used for logging and for the exceptions.'''
+
+    pass
+
+    
+  
+
+    # LanguageChecker
 
 # CLASSES
 class LocalPackageLoader():
