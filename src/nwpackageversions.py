@@ -172,92 +172,13 @@ class RequirementSummary():
             )  
 
 # STATIC CLASSES
-class LambdaCollection():
+class _MessageCollectionLambdaCollection():
 
-    '''Provides useful lambda functions.'''
-
-    @staticmethod
-    def __load_content(file_path : str) -> str:
-        
-        '''Reads the content of the provided text file and returns it as string.'''
-
-        content : str = ""
-        with open(file_path, 'r', encoding = 'utf-8') as file:
-            content = file.read()
-
-        return content
-    @staticmethod
-    def __log_list(logging_function : Callable[[str], None], lst : list[Any]) -> None: 
-
-        '''Adds a newline between each item of the provided lst before logging them.'''
-
-        for item in lst:
-            logging_function(str(item))
+    '''Collects all the messages used for logging and for the exceptions used by LambdaCollection.'''
 
     @staticmethod
-    def get_function() -> Callable[[str], Response]:
-
-        '''An adapter around requests.get(url).'''
-
-        return lambda url : requests.get(url)
-    @staticmethod
-    def logging_function() -> Callable[[str], None]:
-
-        '''An adapter around print().'''
-
-        return lambda msg : print(msg)
-    @staticmethod
-    def list_logging_function() -> Callable[[Callable[[str], None], list[Any]], None]:
-
-        '''
-            An adapter around print() that adds a newline between each item of the provided lst before priting them.'''
-
-        return lambda lf, lst : LambdaCollection.__log_list(lf, lst)
-    @staticmethod
-    def file_reader_function() -> Callable[[str], str]:
-
-        '''An adapter around print().'''
-
-        return lambda file_path : LambdaCollection.__load_content(file_path)    
-    @staticmethod
-    def sleeping_function() -> Callable[[int], None]:
-
-        '''An adapter around time.sleep().'''
-
-        return lambda waiting_time : sleep(cast(float, waiting_time))      
-    @staticmethod
-    def do_nothing_function() -> Callable[[Any], None]:
-
-        '''Does nothing.'''
-
-        return lambda x : None
-
-    @staticmethod
-    def runtime_version_function() -> Callable[[], Tuple[int, int, int]]:
-
-        '''
-            Runs "python --version" command.
-        
-            Expected output: "Python 3.12.5" -> (3, 12, 5)
-        '''
-
-        command : list[str] = ["python", "--version"]
-
-        process : CompletedProcess = subprocess.run(
-            command,
-            capture_output = True,
-            text = True,
-            check = True
-        )
-
-        version_lst : list[str] = str(process.stdout).replace("Python", "").replace("\n", "").strip().split(".")
-
-        if (len(version_lst) != 3):
-            raise Exception("Unexpected output from 'python --version'.")
-        
-        version_tpl : Tuple[int, int, int] = (int(version_lst[0]), int(version_lst[1]), int(version_lst[2]))
-
-        return lambda : version_tpl
+    def python_version_unexpected_output() -> str:
+        return "The 'python --version' command returned an unexpected output."
 class _MessageCollectionLocalPackageLoader():
 
     '''Collects all the messages used for logging and for the exceptions used by LocalPackageLoader.'''
@@ -356,6 +277,7 @@ class _MessageCollectionRuntimeChecker():
         required_str : str = _MessageCollectionRuntimeChecker.__format_version(version = required)
         return f"Warning! The installed Python is not matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
 class _MessageCollection(
+    _MessageCollectionLambdaCollection,
     _MessageCollectionLocalPackageLoader,
     _MessageCollectionRequirementChecker,
     _MessageCollectionPyPiReleaseFetcher,
@@ -369,6 +291,92 @@ class _MessageCollection(
   
 
     # LanguageChecker
+class LambdaCollection():
+
+    '''Provides useful lambda functions.'''
+
+    @staticmethod
+    def __load_content(file_path : str) -> str:
+        
+        '''Reads the content of the provided text file and returns it as string.'''
+
+        content : str = ""
+        with open(file_path, 'r', encoding = 'utf-8') as file:
+            content = file.read()
+
+        return content
+    @staticmethod
+    def __log_list(logging_function : Callable[[str], None], lst : list[Any]) -> None: 
+
+        '''Adds a newline between each item of the provided lst before logging them.'''
+
+        for item in lst:
+            logging_function(str(item))
+
+    @staticmethod
+    def get_function() -> Callable[[str], Response]:
+
+        '''An adapter around requests.get(url).'''
+
+        return lambda url : requests.get(url)
+    @staticmethod
+    def logging_function() -> Callable[[str], None]:
+
+        '''An adapter around print().'''
+
+        return lambda msg : print(msg)
+    @staticmethod
+    def list_logging_function() -> Callable[[Callable[[str], None], list[Any]], None]:
+
+        '''
+            An adapter around print() that adds a newline between each item of the provided lst before priting them.'''
+
+        return lambda lf, lst : LambdaCollection.__log_list(lf, lst)
+    @staticmethod
+    def file_reader_function() -> Callable[[str], str]:
+
+        '''An adapter around print().'''
+
+        return lambda file_path : LambdaCollection.__load_content(file_path)    
+    @staticmethod
+    def sleeping_function() -> Callable[[int], None]:
+
+        '''An adapter around time.sleep().'''
+
+        return lambda waiting_time : sleep(cast(float, waiting_time))      
+    @staticmethod
+    def do_nothing_function() -> Callable[[Any], None]:
+
+        '''Does nothing.'''
+
+        return lambda x : None
+
+    @staticmethod
+    def runtime_version_function() -> Callable[[], Tuple[int, int, int]]:
+
+        '''
+            Runs "python --version" command.
+        
+            Expected output: "Python 3.12.5" -> (3, 12, 5)
+        '''
+
+        command : list[str] = ["python", "--version"]
+
+        process : CompletedProcess = subprocess.run(
+            command,
+            capture_output = True,
+            text = True,
+            check = True
+        )
+
+        version_lst : list[str] = str(process.stdout).replace("Python", "").replace("\n", "").strip().split(".")
+
+        if (len(version_lst) != 3):
+            raise Exception(_MessageCollection.python_version_unexpected_output)
+        
+        version_tpl : Tuple[int, int, int] = (int(version_lst[0]), int(version_lst[1]), int(version_lst[2]))
+
+        return lambda : version_tpl
 
 # CLASSES
 class LocalPackageLoader():
@@ -1110,8 +1118,8 @@ class RuntimeChecker():
 
             return self.get_status(required = required)
         
-        except:
-            return "The 'python --version' command doesn't work. Please check if Python if it's installed."
+        except Exception as e:
+            return str(e)
 
 # MAIN
 if __name__ == "__main__":
