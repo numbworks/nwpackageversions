@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Debug: nwpackageversionscli",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/nwpackageversions.py",
+            "console": "integratedTerminal",
+            "args": [],
+            "justMyCode": true
+        }
+    ]
+}

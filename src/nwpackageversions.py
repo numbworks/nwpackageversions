@@ -8,6 +8,8 @@ Alias: nwpver
 import copy
 import os
 import re
+from subprocess import CompletedProcess
+import subprocess
 import requests
 import sys
 import xml.etree.ElementTree as ET
@@ -230,6 +232,33 @@ class LambdaCollection():
         '''Does nothing.'''
 
         return lambda x : None
+
+    @staticmethod
+    def runtime_version_function() -> Callable[[], Tuple[int, int, int]]:
+
+        '''
+            Runs "python --version" command.
+        
+            Expected output: "Python 3.12.5" -> (3, 12, 5)
+        '''
+
+        command : list[str] = ["python", "--version"]
+
+        process : CompletedProcess = subprocess.run(
+            command,
+            capture_output = True,
+            text = True,
+            check = True
+        )
+
+        version_lst : list[str] = str(process.stdout).replace("Python", "").replace("\n", "").strip().split(".")
+
+        if (len(version_lst) != 3):
+            raise Exception("Unexpected output from 'python --version'.")
+        
+        version_tpl : Tuple[int, int, int] = (int(version_lst[0]), int(version_lst[1]), int(version_lst[2]))
+
+        return lambda : version_tpl
 class _MessageCollectionLocalPackageLoader():
 
     '''Collects all the messages used for logging and for the exceptions used by LocalPackageLoader.'''
@@ -1060,17 +1089,31 @@ class RuntimeChecker():
 
     '''Collects all the logic related to Python runtime checks.'''
 
-    def get_version_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
+    __runtime_version_function : Callable[[], Tuple[int, int, int]]
+
+    def __init__(self, runtime_version_function : Callable[[], Tuple[int, int, int]] = LambdaCollection.runtime_version_function()) -> None:
+
+        self.__runtime_version_function = runtime_version_function
+
+    def get_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
 
         '''Returns a warning message if the installed Python version doesn't match the required one.'''
 
-        installed : Tuple[int, int, int] = (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
+        runtime_version : Tuple[int, int, int] = self.__runtime_version_function()
         
-        if installed == required:
-            return _MessageCollection.installed_python_version_matching(installed = installed, required = required)
+        if runtime_version == required:
+            return _MessageCollection.installed_python_version_matching(installed = runtime_version, required = required)
         else:
-            return _MessageCollection.installed_python_version_not_matching(installed = installed, required = required)
+            return _MessageCollection.installed_python_version_not_matching(installed = runtime_version, required = required)
+    def try_get_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
+
+        try:
+
+            return self.get_status(required = required)
         
+        except:
+            return "The 'python --version' command doesn't work. Please check if Python if it's installed."
+
 # MAIN
 if __name__ == "__main__":
     pass
