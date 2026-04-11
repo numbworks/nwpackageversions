@@ -13,7 +13,6 @@
 			"extensions": [
 				"ms-python.python",
 				"ms-python.vscode-pylance",
-				"ms-toolsai.jupyter",
 				"shd101wyy.markdown-preview-enhanced"
 			]
 		}
