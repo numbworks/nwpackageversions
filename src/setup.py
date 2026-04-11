@@ -1,26 +1,27 @@
-'''Contains packaging information about nwpackageversions.py.'''
+'''Contains packaging instructions.'''
 
 # GLOBAL MODULES
+from setupinfo import CLI_NAME, PROJECT_VERSION, PROJECT_AUTHOR, PROJECT_URL, LIBRARY_NAME, LIBRARY_DESCRIPTION
 from setuptools import setup
-
-# INFORMATION
-MODULE_ALIAS : str = "nwpv"
-MODULE_NAME : str = "nwpackageversions"
-MODULE_VERSION : str = "1.8.2"
 
 # SETUP
 if __name__ == "__main__":
     setup(
-        name = MODULE_NAME,
-        version = MODULE_VERSION,
-        description = "A library that helps with retrieving package information from PyPi.org and comparing them with what you have installed locally.",
-        author = "numbworks",
-        url = f"https://github.com/numbworks/{MODULE_NAME}",
-        py_modules = [ MODULE_NAME ],
-        install_requires = [
+        name = LIBRARY_NAME,
+        version = PROJECT_VERSION,
+        description = LIBRARY_DESCRIPTION,
+        author = PROJECT_AUTHOR,
+        url = PROJECT_URL,
+        py_modules = [ LIBRARY_NAME, CLI_NAME, "setupinfo" ],
+        install_requires = [ 
             "requests==2.32.3",
             "lxml==5.3.0"
-        ],
+		],
         python_requires = ">=3.12",
-        license = "MIT"
+        license = "MIT",
+        entry_points = {
+            'console_scripts': [
+                f'{CLI_NAME} = {CLI_NAME}:main',
+            ],
+        }
     )
