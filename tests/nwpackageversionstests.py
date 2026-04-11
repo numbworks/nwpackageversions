@@ -11,7 +11,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, LanguageChecker, PyPiBadgeFetcher
+from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher
 from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession
 
 # SUPPORT METHODS
@@ -1198,7 +1198,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
             actual : str = requirement_checker.get_default_devcointainer_dockerfile_path()
 
             self.assertEqual(actual, expected)
-class LanguageCheckerTestCase(unittest.TestCase):
+class RuntimeCheckerTestCase(unittest.TestCase):
 
     @parameterized.expand([
         [(3, 12, 1), (3, 12, 1), "The installed Python version is matching the expected one (installed: '3.12.1', expected: '3.12.1')."],
@@ -1212,7 +1212,7 @@ class LanguageCheckerTestCase(unittest.TestCase):
             mocked_vi.major = installed[0]
             mocked_vi.minor = installed[1]
             mocked_vi.micro = installed[2]
-            actual : str = LanguageChecker().get_version_status(required = required)
+            actual : str = RuntimeChecker().get_version_status(required = required)
 
         # Assert
         self.assertEqual(expected, actual)

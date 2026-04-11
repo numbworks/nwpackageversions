@@ -305,9 +305,9 @@ class _MessageCollectionPyPiReleaseFetcher():
     @staticmethod
     def no_suitable_xml_items_found(url : str) -> str:
         return f"No suitable XML items found in '{url}'. The application is not able to establish the most recent release."
-class _MessageCollectionLanguageChecker():
+class _MessageCollectionRuntimeChecker():
 
-    '''Collects all the messages used for logging and for the exceptions used by LanguageChecker.'''
+    '''Collects all the messages used for logging and for the exceptions used by RuntimeChecker.'''
 
     @staticmethod
     def __format_version(version : Tuple[int, int, int]) -> str:
@@ -318,20 +318,20 @@ class _MessageCollectionLanguageChecker():
     
     @staticmethod
     def installed_python_version_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
-        installed_str : str = _MessageCollectionLanguageChecker.__format_version(version = installed)
-        required_str : str = _MessageCollectionLanguageChecker.__format_version(version = required)
+        installed_str : str = _MessageCollectionRuntimeChecker.__format_version(version = installed)
+        required_str : str = _MessageCollectionRuntimeChecker.__format_version(version = required)
         return f"The installed Python version is matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
     
     @staticmethod
     def installed_python_version_not_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
-        installed_str : str = _MessageCollectionLanguageChecker.__format_version(version = installed)
-        required_str : str = _MessageCollectionLanguageChecker.__format_version(version = required)
+        installed_str : str = _MessageCollectionRuntimeChecker.__format_version(version = installed)
+        required_str : str = _MessageCollectionRuntimeChecker.__format_version(version = required)
         return f"Warning! The installed Python is not matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
 class _MessageCollection(
     _MessageCollectionLocalPackageLoader,
     _MessageCollectionRequirementChecker,
     _MessageCollectionPyPiReleaseFetcher,
-    _MessageCollectionLanguageChecker):
+    _MessageCollectionRuntimeChecker):
 
     '''Collects all the messages used for logging and for the exceptions.'''
 
@@ -1056,9 +1056,9 @@ class RequirementChecker():
         )
 
         return dockerfile_path
-class LanguageChecker():
+class RuntimeChecker():
 
-    '''Collects all the logic related to Python language checks.'''
+    '''Collects all the logic related to Python runtime checks.'''
 
     def get_version_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
 
