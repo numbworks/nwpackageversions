@@ -8,9 +8,8 @@ Alias: nwpver
 import copy
 import os
 import re
-from subprocess import CompletedProcess
-import subprocess
 import requests
+import subprocess
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
@@ -18,6 +17,7 @@ from lxml import html
 from lxml.html import HtmlElement
 from re import Match, Pattern
 from requests import Response
+from subprocess import CompletedProcess
 from time import sleep
 from typing import Any, Callable, Literal, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
