@@ -11,7 +11,6 @@ import re
 from subprocess import CompletedProcess
 import subprocess
 import requests
-import sys
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
@@ -1095,7 +1094,7 @@ class RuntimeChecker():
 
         self.__runtime_version_function = runtime_version_function
 
-    def get_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
+    def get_status(self, required : Tuple[int, int, int]) -> str:
 
         '''Returns a warning message if the installed Python version doesn't match the required one.'''
 
@@ -1105,7 +1104,7 @@ class RuntimeChecker():
             return _MessageCollection.installed_python_version_matching(installed = runtime_version, required = required)
         else:
             return _MessageCollection.installed_python_version_not_matching(installed = runtime_version, required = required)
-    def try_get_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
+    def try_get_status(self, required : Tuple[int, int, int]) -> str:
 
         try:
 
