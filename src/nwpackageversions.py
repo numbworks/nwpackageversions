@@ -1,7 +1,7 @@
 '''
-A module that helps with retrieving package information from PyPi.org.
+A library that helps with retrieving package information from PyPi.org and comparing them with what you have installed locally.
 
-Alias: nwpv
+Alias: nwpver
 '''
 
 # GLOBAL MODULES
