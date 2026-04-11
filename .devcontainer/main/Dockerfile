@@ -23,4 +23,4 @@ RUN pip install radon==6.0.1
 RUN pip install pylint==3.3.3
 
 # OTHERS
-RUN pip install --upgrade pip==25.1.1
+RUN pip install --upgrade pip==26.0.1
