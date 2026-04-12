@@ -6,7 +6,9 @@ Alias: nwpver
 
 # GLOBAL MODULES
 import os
-from argparse import _SubParsersAction, ArgumentParser, Namespace
+import re
+from argparse import _SubParsersAction, ArgumentParser, ArgumentTypeError, Namespace
+from re import Match
 from typing import Any, Callable, Final, Optional, Tuple
 
 # LOCAL/NW MODULES
@@ -59,8 +61,16 @@ class _MessageCollectionAsciiBannerManager():
     @staticmethod
     def provided_version_empty_whitespace() -> str:
         return "The provided 'version' is empty or whitespace."
+class _MessageCollectionCLIValidator():
+
+    '''Collects all the messages used for logging and for the exceptions used by CLIValidator.'''
+
+    @staticmethod
+    def provided_required_not_valid(required : str) -> str:
+        return f"The provided 'required' ('{required}') is not a valid version."
 class _MessageCollection(
-    _MessageCollectionAsciiBannerManager):
+    _MessageCollectionAsciiBannerManager,
+    _MessageCollectionCLIValidator):
 
     '''Collects all the messages used for logging and for the exceptions.'''
 
@@ -130,9 +140,32 @@ class AsciiBannerManager:
         ])
 
         return ascii_banner
+class CLIValidator:
+
+    '''Handles CLI argument validation.'''
+
+    def validate_required(self, required: str) -> Tuple[int, int, int]:
+
+        '''Validates that the version string can be parsed into a Tuple[int, int, int].'''
+
+        pattern : str = r"^(\d+)\.(\d+)\.(\d+)$"
+        match : Optional[Match] = re.match(pattern, required)
+
+        if not match:
+            raise ArgumentTypeError(_MessageCollection.provided_required_not_valid(required))
+
+        item_1, item_2, item_3 = map(int, match.groups())
+        version_tpl : Tuple[int, int, int] = (item_1, item_2, item_3)
+
+        return version_tpl
 class APFactory():
 
     '''Encapsulates all the logic related to the creation of a custom instance of argparse.ArgumentParser.'''
+
+    __cli_validator : CLIValidator
+
+    def __init__(self, cli_validator : CLIValidator = CLIValidator()) -> None:
+        self.__cli_validator = cli_validator
 
     def create(self) -> ArgumentParser:
 
@@ -156,7 +189,8 @@ class APFactory():
             *CLISTRING.OPTION_REQUIRED_FLAGS,
             dest = CLISTRING.OPTION_REQUIRED_DEST,
             required = CLISTRING.OPTION_REQUIRED_REQUIRED,
-            help = CLISTRING.OPTION_REQUIRED_HELP)
+            help = CLISTRING.OPTION_REQUIRED_HELP,
+            type = self.__cli_validator.validate_required)
 
         requirements_parser : ArgumentParser = root.add_parser(
             name = CLISTRING.COMMAND_REQUIREMENTS_NAME, 
