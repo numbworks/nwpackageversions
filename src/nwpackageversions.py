@@ -201,51 +201,6 @@ class _MessageCollectionRequirementChecker():
     @staticmethod
     def current_version_doesnt_match(current_package : Package, most_recent_release : Release) -> str:
         return f"The current version ('{current_package.version}') of '{current_package.name}' doesn't match with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}')."
-    @staticmethod
-    def status_checking_operation_started() -> str:
-        return "The status checking operation has started!"
-    @staticmethod
-    def list_local_packages_will_be_loaded(file_path : str) -> str:
-        return f"The list of local packages will be loaded from the following 'file_path': '{file_path}'."
-    @staticmethod
-    def waiting_time_will_be(waiting_time : int) -> str:
-        return f"The 'waiting_time' between each fetching request will be: '{str(waiting_time)}' seconds."
-    @staticmethod
-    def x_local_packages_found_successfully_loaded(packages : list[Package]) -> str:
-        return f"'{str(len(packages))}' local packages has been found and successfully loaded."        
-    @staticmethod
-    def x_unparsed_lines(unparsed_lines : list[str]) -> str:
-        
-        msg : str = f"'{str(len(unparsed_lines))}' unparsed lines."
-
-        if len(unparsed_lines) > 0:
-            msg += "\n"
-            msg += "These are: "
-            msg += str(unparsed_lines)
-        
-        return msg
-    @staticmethod
-    def starting_to_evaluate_status_local_package() -> str:
-        return "Now starting to evaluate the status of each local package..."
-    @staticmethod
-    def total_estimated_time_will_be(waiting_time : int, local_packages : int) -> str:
-        return f"The total estimated time to complete the whole operation will be: '{str(waiting_time * local_packages)}' seconds."       
-    @staticmethod
-    def only_stable_releases_is(only_stable_releases : bool) -> str:
-        return f"'only_stable_releases' is: '{str(only_stable_releases)}'."
-
-    @staticmethod
-    def status_evaluation_operation_successfully_loaded() -> str:
-        return "The status evaluation operation has been successfully completed."
-    @staticmethod
-    def starting_creation_requirement_summary() -> str:
-        return "Now starting the creation of a requirement summary..."
-    @staticmethod
-    def requirement_summary_successfully_created() -> str:
-        return "The requirement summary has been successfully created."
-    @staticmethod
-    def status_checking_operation_completed() -> str:
-        return "The status checking operation has been completed."
 class _MessageCollectionPyPiReleaseFetcher():
 
     '''Collects all the messages used for logging and for the exceptions used by PyPiReleaseFetcher.'''
