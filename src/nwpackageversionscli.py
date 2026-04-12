@@ -212,6 +212,14 @@ class CLIManager():
 
         self.__logging_function("")
         self.__logging_function(self.__ascii_banner_manager.create(PROJECT_VERSION))
+    def __log_namespace(self, args : Namespace):
+
+        '''Logs the provided args.'''
+
+        for key, value in vars(args).items():
+            self.__logging_function(f"{key}: '{value}'")
+            
+        self.__logging_function("")
 
     def parse(self) -> None:
 
@@ -229,19 +237,25 @@ class CLIManager():
             argument_parser : ArgumentParser = self.__ap_factory.create()
             args : Namespace = argument_parser.parse_args()
 
+            self.__log_namespace(args)
+
             if args.command == CLISTRING.COMMAND_RUNTIME_NAME:
-                self.__runtime_checker.try_get_status(required = args.required)
+                status : str = self.__runtime_checker.try_get_status(required = args.required)
+                self.__logging_function(status)
             
             elif args.command == CLISTRING.COMMAND_REQUIREMENTS_NAME:
-                self.__requirement_checker.try_get_status(
+                status = self.__requirement_checker.try_get_status(
                     file_path = args.file_path,
                     only_stable_releases = args.only_stable_releases,
                     waiting_time = args.waiting_time)
+                self.__logging_function(status)
             
         except (Exception, SystemExit) as e:
 
             if not isinstance(e, SystemExit):
                 self.__logging_function(str(e))
+
+
 
 # MAIN
 def main(): CLIManager().parse()
