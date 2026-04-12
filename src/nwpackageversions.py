@@ -459,8 +459,7 @@ class BasicFormatter():
             f"matching: '{str(requirement_summary.matching)}'",
             f"matching_prc: '{requirement_summary.matching_prc}'",
             f"mismatching: '{str(requirement_summary.mismatching)}'",
-            f"mismatching_prc: '{requirement_summary.mismatching_prc}'",
-            f"details: '{len(requirement_summary.details)}'"
+            f"mismatching_prc: '{requirement_summary.mismatching_prc}'"
         ]
 
         formatted : str = str.join("\n", lines)
