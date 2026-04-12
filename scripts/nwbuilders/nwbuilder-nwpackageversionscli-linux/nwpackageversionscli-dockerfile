@@ -51,6 +51,7 @@ RUN --mount=type=cache,target=/root/.ccache \
         --remove-output \
         --noinclude-unittest-mode=nofollow \
         --noinclude-pytest-mode=nofollow \
+        --include-package=charset_normalizer \
         --lto=no \
         "${CLI_NAME}.py" && \
     cd /output && \
