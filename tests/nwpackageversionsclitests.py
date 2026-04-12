@@ -1,14 +1,14 @@
 # GLOBAL MODULES
 import unittest
-from argparse import ArgumentParser, Namespace
+from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from parameterized import parameterized
-from typing import Optional
+from typing import Optional, Tuple
 from unittest.mock import Mock, patch
 
 # LOCAL MODULES
 import sys, os
 sys.path.append(os.path.dirname(__file__).replace('tests', 'src'))
-from nwpackageversionscli import AsciiBannerManager, _MessageCollection
+from nwpackageversionscli import AsciiBannerManager, _MessageCollection, CLIValidator
 
 # SUPPORT METHODS
 # TEST CLASSES
@@ -82,6 +82,38 @@ class AsciiBannerManagerTestCase(unittest.TestCase):
             self.assertIn("top_border", actual)
             self.assertIn("ascii_art", actual)
             self.assertIn("bottom_border", actual)
+class CLIValidatorTestCase(unittest.TestCase):
+
+    def test_validaterequired_shouldreturntuple_whenversionstringisvalid(self) -> None:
+
+        # Arrange
+        required : str = "3.12.5"
+        expected : Tuple[int, int, int] = (3, 12, 5)
+
+        # Act
+        actual : Tuple[int, int, int] = CLIValidator().validate_required(required = required)
+
+        # Assert
+        self.assertEqual(actual, expected)
+
+    @parameterized.expand([
+        ["3.12"],
+        ["3.12.5.1"],
+        ["python3.12.5"],
+        ["latest"],
+        ["3.12.a"]
+    ])
+    def test_validaterequired_shouldraiseargumenttypeerror_whenversionstringisinvalid(self, required : str) -> None:
+
+        # Arrange
+        validator : CLIValidator = CLIValidator()
+        expected : str = _MessageCollection.provided_required_not_valid(required)
+
+        # Act / Assert
+        with self.assertRaises(ArgumentTypeError) as context:
+            validator.validate_required(required = required)
+
+        self.assertEqual(str(context.exception), expected)
 
 # MAIN
 if __name__ == "__main__":
