@@ -292,39 +292,6 @@ class LambdaCollection():
         '''Does nothing.'''
 
         return lambda x : None
-    @staticmethod
-    def runtime_version_function() -> Callable[[], Tuple[int, int, int]]:
-
-        '''
-            Runs:
-                - "python --version" on Windows
-                - "python3 --version" on Linux
-        
-            Expected output: "Python 3.12.5" -> (3, 12, 5)
-        '''
-
-        executable : str = "python3"
-        
-        if platform.system() == "Windows":
-            executable = "python"
-
-        command : list[str] = [executable, "--version"]
-
-        process : CompletedProcess = subprocess.run(
-            command,
-            capture_output = True,
-            text = True,
-            check = True
-        )
-
-        version_lst : list[str] = str(process.stdout).replace("Python", "").replace("\n", "").strip().split(".")
-
-        if (len(version_lst) != 3):
-            raise Exception(_MessageCollection.python_version_unexpected_output())
-        
-        version_tpl : Tuple[int, int, int] = (int(version_lst[0]), int(version_lst[1]), int(version_lst[2]))
-
-        return lambda : version_tpl
 class Validator():
 
     '''Collects all validation methods.'''
@@ -946,20 +913,44 @@ class RuntimeChecker():
 
     '''Collects all the logic related to Python runtime checks.'''
 
-    __runtime_version_function : Callable[[], Tuple[int, int, int]]
+    def __get_runtime_version(self) -> Tuple[int, int, int]:
 
-    def __init__(self, runtime_version_function : Optional[Callable[[], Tuple[int, int, int]]] = None) -> None:
+        '''
+            Runs:
+                - "python --version" on Windows
+                - "python3 --version" on Linux
+        
+            Expected output: "Python 3.12.5" -> (3, 12, 5)
+        '''
 
-        if runtime_version_function is None:
-            self.__runtime_version_function = LambdaCollection.runtime_version_function()
-        else:
-            self.__runtime_version_function = runtime_version_function
+        executable : str = "python3"
+        
+        if platform.system() == "Windows":
+            executable = "python"
+
+        command : list[str] = [executable, "--version"]
+
+        process : CompletedProcess = subprocess.run(
+            command,
+            capture_output = True,
+            text = True,
+            check = True
+        )
+
+        version_lst : list[str] = str(process.stdout).replace("Python", "").replace("\n", "").strip().split(".")
+
+        if (len(version_lst) != 3):
+            raise Exception(_MessageCollection.python_version_unexpected_output())
+        
+        version_tpl : Tuple[int, int, int] = (int(version_lst[0]), int(version_lst[1]), int(version_lst[2]))
+
+        return version_tpl
 
     def get_status(self, required : Tuple[int, int, int]) -> str:
 
         '''Returns a warning message if the installed Python version doesn't match the required one.'''
 
-        runtime_version : Tuple[int, int, int] = self.__runtime_version_function()
+        runtime_version : Tuple[int, int, int] = self.__get_runtime_version()
         
         if runtime_version == required:
             return _MessageCollection.installed_python_version_matching(installed = runtime_version, required = required)

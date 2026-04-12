@@ -1,5 +1,6 @@
 # GLOBAL MODULES
 import os
+import subprocess
 import sys
 import unittest
 from datetime import datetime
@@ -652,38 +653,6 @@ class LambdaCollectionTestCase(unittest.TestCase):
 
         # Act, Assert
         do_nothing_function("test")
-    def test_runtimeversionfunction_shouldreturnexpectedtuple_wheninvoked(self):
-
-        # Arrange
-        expected : Tuple[int, int, int] = (3, 12, 5)
-        stdout : str = "Python 3.12.5\n"
-        process : MagicMock = MagicMock(spec = CompletedProcess)
-        process.stdout = stdout
-
-        # Act
-        actual : Optional[Tuple[int, int, int]] = None
-        with patch("subprocess.run", return_value = process) as run:
-            runtime_version_function : Callable[[], Tuple[int, int, int]] = LambdaCollection.runtime_version_function()
-            actual = runtime_version_function()
-
-        # Assert
-        run.assert_called_once_with(["python3", "--version"], capture_output = True, text = True, check = True)
-        self.assertEqual(actual, expected)
-    def test_runtimeversionfunction_shouldraiseexception_whenoutputisunexpected(self):
-
-        # Arrange
-        stdout : str = "Invalid Output"
-        process : MagicMock = MagicMock(spec = CompletedProcess)
-        process.stdout = stdout
-
-        # Act, Assert
-        with patch("subprocess.run", return_value = process):
-            with self.assertRaises(Exception)as context:
-                LambdaCollection.runtime_version_function()
-
-            self.assertEqual(
-                _MessageCollection.python_version_unexpected_output(),
-                str(context.exception))
 class ValidatorTestCase(unittest.TestCase):
 
     def test_validatewaitingtime_shouldraiseexceptionwithexpectedmessage_whenwaitingtimelessthanminimum(self):
@@ -1238,6 +1207,43 @@ class PyPiReleaseFetcherTestCase(unittest.TestCase):
         self.assertEqual(actual, expected)
 class RuntimeCheckerTestCase(unittest.TestCase):
 
+    def test_getruntimeversion_shouldreturnexpectedtuple_wheninvoked(self):
+
+        # Arrange
+        expected : Tuple[int, int, int] = (3, 12, 5)
+        stdout : str = "Python 3.12.5\n"
+        process : MagicMock = MagicMock(spec = subprocess.CompletedProcess)
+        process.stdout = stdout
+        
+        # Act
+        runtime_checker : RuntimeChecker = RuntimeChecker()
+        actual : Optional[Tuple[int, int, int]] = None
+
+        with patch("platform.system", return_value = "Linux"):
+            with patch("subprocess.run", return_value = process) as run:
+                actual = runtime_checker._RuntimeChecker__get_runtime_version() #type: ignore
+
+        # Assert
+        run.assert_called_once_with(["python3", "--version"], capture_output = True, text = True, check = True)
+        self.assertEqual(actual, expected)
+    def test_getruntimeversion_shouldraiseexception_whenoutputisunexpected(self):
+
+        # Arrange
+        stdout : str = "Invalid Output"
+        process : MagicMock = MagicMock(spec = subprocess.CompletedProcess)
+        process.stdout = stdout
+
+        # Act, Assert
+        runtime_checker : RuntimeChecker = RuntimeChecker()
+
+        with patch("subprocess.run", return_value = process):
+            with self.assertRaises(Exception) as context:
+                runtime_checker._RuntimeChecker__get_runtime_version() #type: ignore
+
+            self.assertEqual(
+                _MessageCollection.python_version_unexpected_output(),
+                str(context.exception))
+
     @parameterized.expand([
         [(3, 12, 1), (3, 12, 1), "The installed Python version is matching the expected one (installed: '3.12.1', expected: '3.12.1')."],
         [(3, 11, 11), (3, 12, 1), "Warning! The installed Python is not matching the expected one (installed: '3.11.11', expected: '3.12.1')."],
@@ -1245,14 +1251,13 @@ class RuntimeCheckerTestCase(unittest.TestCase):
     def test_getstatus_shouldreturnexpectedstring_wheninvoked(self, installed : Tuple[int, int, int], required : Tuple[int, int, int], expected : str):
 
         # Arrange
-        runtime_version_function : MagicMock = MagicMock(return_value = installed)
-        runtime_checker : RuntimeChecker = RuntimeChecker(runtime_version_function = runtime_version_function)
+        with patch.object(RuntimeChecker, "_RuntimeChecker__get_runtime_version", return_value = installed):
 
-        # Act
-        actual : str = runtime_checker.get_status(required = required)
+            # Act
+            actual : str = RuntimeChecker().get_status(required = required)
 
-        # Assert
-        self.assertEqual(actual, expected)
+            # Assert
+            self.assertEqual(actual, expected)
 
     def test_trygetstatus_shouldreturnexpectedstatus_whennoexceptionisraised(self):
 
@@ -1261,28 +1266,26 @@ class RuntimeCheckerTestCase(unittest.TestCase):
         required : Tuple[int, int, int] = (3, 12, 1)
         expected : str = "The installed Python version is matching the expected one (installed: '3.12.1', expected: '3.12.1')."
         
-        runtime_version_function : MagicMock = MagicMock(return_value = installed)
-        runtime_checker : RuntimeChecker = RuntimeChecker(runtime_version_function = runtime_version_function)
+        with patch.object(RuntimeChecker, "_RuntimeChecker__get_runtime_version", return_value = installed):
 
-        # Act
-        actual : str = runtime_checker.try_get_status(required = required)
+            # Act
+            actual : str = RuntimeChecker().try_get_status(required = required)
 
-        # Assert
-        self.assertEqual(actual, expected)
+            # Assert
+            self.assertEqual(actual, expected)
     def test_trygetstatus_shouldreturnexceptionmessage_whenexceptionisraised(self):
 
         # Arrange
         expected : str = "Some error occurred."
         required : Tuple[int, int, int] = (3, 12, 1)
         
-        runtime_version_function : MagicMock = MagicMock(side_effect = Exception(expected))
-        runtime_checker : RuntimeChecker = RuntimeChecker(runtime_version_function = runtime_version_function)
+        with patch.object(RuntimeChecker, "_RuntimeChecker__get_runtime_version", side_effect = Exception(expected)):
 
-        # Act
-        actual : str = runtime_checker.try_get_status(required = required)
+            # Act
+            actual : str = RuntimeChecker().try_get_status(required = required)
 
-        # Assert
-        self.assertEqual(actual, expected)
+            # Assert
+            self.assertEqual(actual, expected)
 class RequirementCheckerTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
