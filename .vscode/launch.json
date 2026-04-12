@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+
+        {
+            "name": "Debug: nwpackageversionscli",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/nwpackageversionscli.py",
+            "console": "integratedTerminal",
+            "args": ["requirements", "--file_path", "${workspaceFolder}/.devcontainer/main/Dockerfile", "--waiting_time", "5"],
+            "justMyCode": true
+        }
+    ]
+}

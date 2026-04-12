@@ -1,0 +1,41 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "nwpackageversions: all-concise",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/scripts/nwmakefiles && make -f makefile-nwpackageversions all-concise",
+            "problemMatcher": []
+        },
+        {
+            "label": "nwpackageversionscli: all-concise",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/scripts/nwmakefiles && make -f makefile-nwpackageversionscli all-concise",
+            "problemMatcher": []
+        },
+        {
+            "label": "nwpackageversions: coverage-verbose",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/scripts/nwmakefiles && make -f makefile-nwpackageversions coverage-verbose",
+            "problemMatcher": []
+        },
+        {
+            "label": "nwpackageversionscli: coverage-verbose",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/scripts/nwmakefiles && make -f makefile-nwpackageversionscli coverage-verbose",
+            "problemMatcher": []
+        },
+        {
+            "label": "nwpackageversions: update-codecoverage",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/scripts/nwmakefiles && make -f makefile-nwpackageversions update-codecoverage",
+            "problemMatcher": []
+        },
+        {
+            "label": "nwpackageversionscli: update-codecoverage",
+            "type": "shell",
+            "command": "cd ${workspaceFolder}/scripts/nwmakefiles && make -f makefile-nwpackageversionscli update-codecoverage",
+            "problemMatcher": []
+        }
+    ]
+}

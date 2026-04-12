@@ -1,15 +1,16 @@
 '''
-A module that helps with retrieving package information from PyPi.org.
+A library that helps with retrieving package information from PyPi.org and comparing them with what you have installed locally.
 
-Alias: nwpv
+Alias: nwpver
 '''
 
 # GLOBAL MODULES
 import copy
 import os
+import platform
 import re
 import requests
-import sys
+import subprocess
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime
@@ -17,12 +18,20 @@ from lxml import html
 from lxml.html import HtmlElement
 from re import Match, Pattern
 from requests import Response
+from subprocess import CompletedProcess
 from time import sleep
-from typing import Any, Callable, Literal, Optional, Tuple, cast
+from typing import Any, Callable, Final, Literal, Optional, Tuple, cast, Protocol, runtime_checkable
 from xml.etree.ElementTree import Element
 
 # LOCAL MODULES
 # CONSTANTS
+class DEFAULT:
+
+    '''Collects all the defaults.'''
+
+    ONLY_STABLE_RELEASES : Final[bool] = True
+    WAITING_TIME : Final[int] = 10
+    
 # DTOs
 @dataclass(frozen = True)
 class Package():
@@ -142,11 +151,6 @@ class RequirementDetail():
     most_recent_release : Release
     is_version_matching : bool
     description : str
-
-    def __str__(self):
-        return str("{ " f"'description': '{self.description}'" " }")
-    def __repr__(self):
-        return self.__str__()
 @dataclass(frozen = True)
 class RequirementSummary():
 
@@ -159,18 +163,90 @@ class RequirementSummary():
     mismatching_prc : str
     details : list[RequirementDetail]
 
-    def __str__(self):
-        return str(
-                "{ "
-                f"'total_packages': '{str(self.total_packages)}', "
-                f"'matching': '{str(self.matching)}', "
-                f"'matching_prc': '{self.matching_prc}', "
-                f"'mismatching': '{str(self.mismatching)}', "
-                f"'mismatching_prc': '{self.mismatching_prc}'"
-                " }"                
-            )  
-
 # STATIC CLASSES
+class _MessageCollectionLambdaCollection():
+
+    '''Collects all the messages used for logging and for the exceptions used by LambdaCollection.'''
+
+    @staticmethod
+    def python_version_unexpected_output() -> str:
+        return "The 'python3 --version' command returned an unexpected output."
+class _MessageCollectionValidator():
+
+    '''Collects all the messages used for logging and for the exceptions used by Validator.'''
+
+    @staticmethod
+    def waiting_time_cant_be_less_than(waiting_time : int, expected : int) -> str:
+        return f"Waiting time ('{str(waiting_time)}') can't be less than {expected} seconds."
+
+    @staticmethod
+    def provided_file_path_doesnt_exist(file_path : str) -> str:
+        return f"The provided 'file_path' doesn't exist: '{file_path}'."
+class _MessageCollectionLocalPackageLoader():
+
+    '''Collects all the messages used for logging and for the exceptions used by LocalPackageLoader.'''
+
+    @staticmethod
+    def no_loading_strategy_found(file_path : str) -> str:
+        return f"No loading strategy found for the provided file name. ('file_path': '{file_path}', 'supported_file_names' : [ 'requirements.txt', 'Dockerfile' ])"
+    @staticmethod
+    def no_packages_found(file_path : str) -> str:
+        return f"No packages found in '{file_path}'. Please open the documentation to check the expected layout of the supported files."
+class _MessageCollectionRequirementChecker():
+
+    '''Collects all the messages used for logging and for the exceptions used by RequirementChecker.'''
+
+    @staticmethod
+    def current_version_matches(current_package : Package, most_recent_release : Release) -> str:
+        return f"The current version ('{current_package.version}') of '{current_package.name}' matches with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}')."
+    @staticmethod
+    def current_version_doesnt_match(current_package : Package, most_recent_release : Release) -> str:
+        return f"The current version ('{current_package.version}') of '{current_package.name}' doesn't match with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}')."
+class _MessageCollectionPyPiReleaseFetcher():
+
+    '''Collects all the messages used for logging and for the exceptions used by PyPiReleaseFetcher.'''
+
+    @staticmethod
+    def no_suitable_xml_items_found(url : str) -> str:
+        return f"No suitable XML items found in '{url}'. The application is not able to establish the most recent release."
+class _MessageCollectionRuntimeChecker():
+
+    '''Collects all the messages used for logging and for the exceptions used by RuntimeChecker.'''
+
+    @staticmethod
+    def __format_version(version : Tuple[int, int, int]) -> str:
+
+        "Converts version to string."
+
+        return f"{version[0]}.{version[1]}.{version[2]}"
+    
+    @staticmethod
+    def installed_python_version_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
+        installed_str : str = _MessageCollectionRuntimeChecker.__format_version(version = installed)
+        required_str : str = _MessageCollectionRuntimeChecker.__format_version(version = required)
+        return f"The installed Python version is matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
+    
+    @staticmethod
+    def installed_python_version_not_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
+        installed_str : str = _MessageCollectionRuntimeChecker.__format_version(version = installed)
+        required_str : str = _MessageCollectionRuntimeChecker.__format_version(version = required)
+        return f"Warning! The installed Python is not matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
+class _MessageCollection(
+    _MessageCollectionLambdaCollection,
+    _MessageCollectionValidator,
+    _MessageCollectionLocalPackageLoader,
+    _MessageCollectionRequirementChecker,
+    _MessageCollectionPyPiReleaseFetcher,
+    _MessageCollectionRuntimeChecker):
+
+    '''Collects all the messages used for logging and for the exceptions.'''
+
+    pass
+
+    
+  
+
+    # LanguageChecker
 class LambdaCollection():
 
     '''Provides useful lambda functions.'''
@@ -185,13 +261,6 @@ class LambdaCollection():
             content = file.read()
 
         return content
-    @staticmethod
-    def __log_list(logging_function : Callable[[str], None], lst : list[Any]) -> None: 
-
-        '''Adds a newline between each item of the provided lst before logging them.'''
-
-        for item in lst:
-            logging_function(str(item))
 
     @staticmethod
     def get_function() -> Callable[[str], Response]:
@@ -205,13 +274,6 @@ class LambdaCollection():
         '''An adapter around print().'''
 
         return lambda msg : print(msg)
-    @staticmethod
-    def list_logging_function() -> Callable[[Callable[[str], None], list[Any]], None]:
-
-        '''
-            An adapter around print() that adds a newline between each item of the provided lst before priting them.'''
-
-        return lambda lf, lst : LambdaCollection.__log_list(lf, lst)
     @staticmethod
     def file_reader_function() -> Callable[[str], str]:
 
@@ -230,94 +292,113 @@ class LambdaCollection():
         '''Does nothing.'''
 
         return lambda x : None
-class _MessageCollection():
+class Validator():
 
-    '''Collects all the messages used for logging and for the exceptions.'''
+    '''Collects all validation methods.'''
 
     @staticmethod
-    def no_loading_strategy_found(file_path : str) -> str:
-        return f"No loading strategy found for the provided file name. ('file_path': '{file_path}', 'supported_file_names' : [ 'requirements.txt', 'Dockerfile' ])"
+    def validate_waiting_time(waiting_time : int) -> None:
+
+        minimum_wt : int = 5
+
+        if waiting_time < minimum_wt:
+            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt))
+
     @staticmethod
-    def no_packages_found(file_path : str) -> str:
-        return f"No packages found in '{file_path}'. Please open the documentation to check the expected layout of the supported files."
-    
-    @staticmethod
-    def waiting_time_cant_be_less_than(waiting_time : int, expected : int) -> str:
-        return f"Waiting time ('{str(waiting_time)}') can't be less than {expected} seconds."
-    @staticmethod
-    def current_version_matches(current_package : Package, most_recent_release : Release) -> str:
-        return f"The current version ('{current_package.version}') of '{current_package.name}' matches with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}')."
-    @staticmethod
-    def current_version_doesnt_match(current_package : Package, most_recent_release : Release) -> str:
-        return f"The current version ('{current_package.version}') of '{current_package.name}' doesn't match with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}')."
-    @staticmethod
-    def status_checking_operation_started() -> str:
-        return "The status checking operation has started!"
-    @staticmethod
-    def list_local_packages_will_be_loaded(file_path : str) -> str:
-        return f"The list of local packages will be loaded from the following 'file_path': '{file_path}'."
-    @staticmethod
-    def waiting_time_will_be(waiting_time : int) -> str:
-        return f"The 'waiting_time' between each fetching request will be: '{str(waiting_time)}' seconds."
-    @staticmethod
-    def x_local_packages_found_successfully_loaded(packages : list[Package]) -> str:
-        return f"'{str(len(packages))}' local packages has been found and successfully loaded."        
-    @staticmethod
-    def x_unparsed_lines(unparsed_lines : list[str]) -> str:
+    def validate_file_path(file_path : str) -> None:
+
+        '''Returns file_path or raises Exception.'''
+
+        if not os.path.isfile(file_path):
+            raise Exception(_MessageCollection.provided_file_path_doesnt_exist(file_path))
+
+# PROTOCOLS
+@runtime_checkable
+class Formatter(Protocol):
+
+    '''This protocol defines the interface for formatting objects.'''
+
+    def format_requirement_detail(self, requirement_detail : RequirementDetail) -> str: ...
+    def format_requirement_details(self, requirement_details : list[RequirementDetail]) -> str: ...
+    def format_requirement_summary(self, requirement_summary : RequirementSummary, with_details : bool = True) -> str: ...
         
-        msg : str = f"'{str(len(unparsed_lines))}' unparsed lines."
-
-        if len(unparsed_lines) > 0:
-            msg += "\n"
-            msg += "These are: "
-            msg += str(unparsed_lines)
-        
-        return msg
-    @staticmethod
-    def starting_to_evaluate_status_local_package() -> str:
-        return "Now starting to evaluate the status of each local package..."
-    @staticmethod
-    def total_estimated_time_will_be(waiting_time : int, local_packages : int) -> str:
-        return f"The total estimated time to complete the whole operation will be: '{str(waiting_time * local_packages)}' seconds."       
-    @staticmethod
-    def only_stable_releases_is(only_stable_releases : bool) -> str:
-        return f"'only_stable_releases' is: '{str(only_stable_releases)}'."
-    
-    @staticmethod
-    def status_evaluation_operation_successfully_loaded() -> str:
-        return "The status evaluation operation has been successfully completed."
-    @staticmethod
-    def starting_creation_requirement_summary() -> str:
-        return "Now starting the creation of a requirement summary..."
-    @staticmethod
-    def requirement_summary_successfully_created() -> str:
-        return "The requirement summary has been successfully created."
-    @staticmethod
-    def status_checking_operation_completed() -> str:
-        return "The status checking operation has been completed."       
-
-    @staticmethod
-    def no_suitable_xml_items_found(url : str) -> str:
-        return f"No suitable XML items found in '{url}'. The application is not able to establish the most recent release."
-
-    @staticmethod
-    def __format_version(version : Tuple[int, int, int]) -> str:
-
-        "Converts version to string."
-
-        return f"{version[0]}.{version[1]}.{version[2]}"
-    @staticmethod
-    def installed_python_version_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
-        installed_str : str = _MessageCollection.__format_version(version = installed)
-        required_str : str = _MessageCollection.__format_version(version = required)
-        return f"The installed Python version is matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
-    @staticmethod
-    def installed_python_version_not_matching(installed : Tuple[int, int, int], required : Tuple[int, int, int]) -> str:
-        installed_str : str = _MessageCollection.__format_version(version = installed)
-        required_str : str = _MessageCollection.__format_version(version = required)
-        return f"Warning! The installed Python is not matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
-
 # CLASSES
+class JsonFormatter():
+
+    '''This class collects all the logic related to formatting objects.'''
+
+    def format_requirement_detail(self, requirement_detail : RequirementDetail) -> str:
+
+        '''Formats the provided object.'''
+
+        formatted : str = str("{ " f"'description': '{requirement_detail.description}'" " }")
+
+        return formatted
+    def format_requirement_details(self, requirement_details : list[RequirementDetail]) -> str:
+
+        '''Formats the provided object.'''
+
+        lines : list[str] = []
+
+        for requirement_detail in requirement_details:
+            lines.append(self.format_requirement_detail(requirement_detail))
+
+        return str.join("\n", lines)
+    def format_requirement_summary(self, requirement_summary : RequirementSummary, with_details : bool = True) -> str:
+
+        '''Formats the provided object.'''
+
+        formatted : str = str(
+            "{ "
+            f"'total_packages': '{str(requirement_summary.total_packages)}', "
+            f"'matching': '{str(requirement_summary.matching)}', "
+            f"'matching_prc': '{requirement_summary.matching_prc}', "
+            f"'mismatching': '{str(requirement_summary.mismatching)}', "
+            f"'mismatching_prc': '{requirement_summary.mismatching_prc}'"
+            " }")
+
+        if (with_details):
+            formatted = str.join("\n", [formatted, self.format_requirement_details(requirement_summary.details)])
+        
+        return formatted
+class BasicFormatter():
+
+    '''This class collects all the logic related to formatting objects.'''
+
+    def format_requirement_detail(self, requirement_detail : RequirementDetail) -> str:
+
+        '''Formats the provided object.'''
+
+        return requirement_detail.description
+    def format_requirement_details(self, requirement_details : list[RequirementDetail]) -> str:
+
+        '''Formats the provided object.'''
+
+        lines : list[str] = []
+
+        for requirement_detail in requirement_details:
+            lines.append(self.format_requirement_detail(requirement_detail))
+
+        return str.join("\n", lines)
+    def format_requirement_summary(self, requirement_summary : RequirementSummary, with_details : bool = True) -> str:
+
+        '''Formats the provided object.'''
+
+        lines : list[str] = [
+            f"total_packages: '{str(requirement_summary.total_packages)}'",
+            f"matching: '{str(requirement_summary.matching)}'",
+            f"matching_prc: '{requirement_summary.matching_prc}'",
+            f"mismatching: '{str(requirement_summary.mismatching)}'",
+            f"mismatching_prc: '{requirement_summary.mismatching_prc}'"
+        ]
+
+        formatted : str = str.join("\n", lines)
+
+        if (with_details):
+            formatted += "\n"
+            formatted = str.join("\n", [formatted, self.format_requirement_details(requirement_summary.details)])
+        
+        return formatted
 class LocalPackageLoader():
 
     '''This class collects all the logic related to load information about local packages.'''
@@ -828,29 +909,81 @@ class PyPiReleaseFetcher():
         )
 
         return f_session
+class RuntimeChecker():
+
+    '''Collects all the logic related to Python runtime checks.'''
+
+    def __get_runtime_version(self) -> Tuple[int, int, int]:
+
+        '''
+            Runs:
+                - "python --version" on Windows
+                - "python3 --version" on Linux
+        
+            Expected output: "Python 3.12.5" -> (3, 12, 5)
+        '''
+
+        executable : str = "python3"
+        
+        if platform.system() == "Windows":
+            executable = "python"
+
+        command : list[str] = [executable, "--version"]
+
+        process : CompletedProcess = subprocess.run(
+            command,
+            capture_output = True,
+            text = True,
+            check = True
+        )
+
+        version_lst : list[str] = str(process.stdout).replace("Python", "").replace("\n", "").strip().split(".")
+
+        if (len(version_lst) != 3):
+            raise Exception(_MessageCollection.python_version_unexpected_output())
+        
+        version_tpl : Tuple[int, int, int] = (int(version_lst[0]), int(version_lst[1]), int(version_lst[2]))
+
+        return version_tpl
+
+    def get_status(self, required : Tuple[int, int, int]) -> str:
+
+        '''Returns a warning message if the installed Python version doesn't match the required one.'''
+
+        runtime_version : Tuple[int, int, int] = self.__get_runtime_version()
+        
+        if runtime_version == required:
+            return _MessageCollection.installed_python_version_matching(installed = runtime_version, required = required)
+        else:
+            return _MessageCollection.installed_python_version_not_matching(installed = runtime_version, required = required)
+    def try_get_status(self, required : Tuple[int, int, int]) -> str:
+
+        try:
+
+            return self.get_status(required = required)
+        
+        except Exception as e:
+            return str(e)
 class RequirementChecker():
 
     '''This class collects all the logic related to requirement status checking.'''
 
     __package_loader : LocalPackageLoader
     __release_fetcher : PyPiReleaseFetcher
-    __logging_function : Callable[[str], None]
-    __list_logging_function : Callable[[Callable[[str], None], list[Any]], None]
+    __formatter : Formatter
     __sleeping_function : Callable[[int], None]
 
     def __init__(
             self, 
             package_loader : LocalPackageLoader = LocalPackageLoader(),
             release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(),
-            logging_function : Callable[[str], None] = LambdaCollection.logging_function(),
-            list_logging_function : Callable[[Callable[[str], None], list[Any]], None] = LambdaCollection.list_logging_function(),
+            formatter : Formatter = BasicFormatter(),
             sleeping_function : Callable[[int], None] = LambdaCollection.sleeping_function()
             ) -> None:
       
         self.__package_loader = package_loader
         self.__release_fetcher = release_fetcher
-        self.__logging_function = logging_function
-        self.__list_logging_function = list_logging_function
+        self.__formatter = formatter
         self.__sleeping_function = sleeping_function
 
     def __compare(self, current_package : Package, most_recent_release : Release) -> Tuple[bool, str]:
@@ -890,6 +1023,7 @@ class RequirementChecker():
         '''Creates a list of RequirementDetail objects out of the provided l_session.'''
 
         requirement_details : list[RequirementDetail] = []
+
         for current_package in l_session.packages:
 
             f_session : FSession = self.__release_fetcher.fetch(package_name = current_package.name, only_stable_releases = only_stable_releases)
@@ -902,6 +1036,8 @@ class RequirementChecker():
 
             self.__sleeping_function(waiting_time)
         
+        requirement_details.sort(key = lambda x : x.is_version_matching)
+
         return requirement_details
     def __calculate_prc(self, value : int, total : int) -> str:
 
@@ -935,35 +1071,23 @@ class RequirementChecker():
         )
 
         return requirement_summary
-
-    def check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5, sort_requirement_details : bool = False) -> RequirementSummary:
+   
+    def get_summary(self, file_path : str, only_stable_releases : bool = DEFAULT.ONLY_STABLE_RELEASES, waiting_time : int = DEFAULT.WAITING_TIME) -> RequirementSummary:
 
         '''
             This method:
             
-                1. loads a list of locally-installed Python packages from file_path
-                2. fetches the latest information about each of them on PyPi.org
-                3. returns a RequirementSummary object
+                1. Loads a list of locally-installed Python packages from file_path.
+                2. Fetches the latest information about each of them on PyPi.org.
+                3. Returns a RequirementSummary object.
             
-            All the steps are logged.
             It raises an Exception if an issue arises.
         '''
 
-        minimum_wt : int = 5
-        if waiting_time < minimum_wt:
-            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt))
-
-        self.__logging_function(_MessageCollection.status_checking_operation_started())
-        self.__logging_function(_MessageCollection.list_local_packages_will_be_loaded(file_path))
-        self.__logging_function(_MessageCollection.waiting_time_will_be(waiting_time))
+        Validator().validate_file_path(file_path)
+        Validator().validate_waiting_time(waiting_time)
 
         l_session : LSession = self.__package_loader.load(file_path = file_path)
-
-        self.__logging_function(_MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages))
-        self.__logging_function(_MessageCollection.x_unparsed_lines(l_session.unparsed_lines))
-        self.__logging_function(_MessageCollection.starting_to_evaluate_status_local_package())
-        self.__logging_function(_MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)))
-        self.__logging_function(_MessageCollection.only_stable_releases_is(only_stable_releases))
         
         requirement_details : list[RequirementDetail] = self.__create_requirement_details(
             l_session = l_session, 
@@ -971,81 +1095,50 @@ class RequirementChecker():
             only_stable_releases = only_stable_releases
         )
 
-        if sort_requirement_details:
-            requirement_details.sort(key = lambda x : x.is_version_matching)
-
-        self.__logging_function(_MessageCollection.status_evaluation_operation_successfully_loaded())
-        self.__list_logging_function(self.__logging_function, requirement_details)
-        self.__logging_function(_MessageCollection.starting_creation_requirement_summary())
-
         requirement_summary : RequirementSummary = self.__create_requirement_summary(requirement_details = requirement_details)
 
-        self.__logging_function(_MessageCollection.requirement_summary_successfully_created())
-        self.__logging_function(str(requirement_summary))
-        self.__logging_function(_MessageCollection.status_checking_operation_completed())
-
         return requirement_summary
-    def try_check(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5, sort_requirement_details : bool = False) -> Optional[RequirementSummary]:
+    def get_status(self, file_path : str, only_stable_releases : bool = DEFAULT.ONLY_STABLE_RELEASES, waiting_time : int = DEFAULT.WAITING_TIME) -> str:
 
         '''
-            It performs the same operations as check().
-            It doesn't raise an Exception if an issue arises, but it logs it and returns None.
+            This method:
+            
+                1. Loads a list of locally-installed Python packages from file_path.
+                2. Fetches the latest information about each of them on PyPi.org.
+                3. Returns a RequirementSummary object.
+                4. Formats as status.
+            
+            It raises an Exception if an issue arises.
+        '''
+
+        requirement_summary : RequirementSummary = self.get_summary(
+            file_path = file_path, 
+            only_stable_releases = only_stable_releases, 
+            waiting_time = waiting_time)
+
+        status : str = self.__formatter.format_requirement_summary(requirement_summary)
+
+        return status
+    def try_get_status(self, file_path : str, only_stable_releases : bool = DEFAULT.ONLY_STABLE_RELEASES, waiting_time : int = DEFAULT.WAITING_TIME) -> str:
+
+        '''
+            It performs the same operations as get_status().
+            If an issue arises, but it logs the Exception and returns None.
         '''
 
         try:
             
-            return self.check(
+            status : str = self.get_status(
                 file_path = file_path, 
                 only_stable_releases = only_stable_releases, 
-                waiting_time = waiting_time, 
-                sort_requirement_details = sort_requirement_details
-                )
+                waiting_time = waiting_time)
+            
+            return status
 
         except Exception as e:
 
-            self.__logging_function(str(e))
-            
-            return None
-    def log_requirement_summary(self, requirement_summary : RequirementSummary) -> None:
+            return str(e)
 
-        '''Logs requirement_summary by using logging_function and list_logging_function.'''
-
-        self.__logging_function(str(requirement_summary))
-        self.__list_logging_function(self.__logging_function, requirement_summary.details)
-    def get_default_devcointainer_dockerfile_path(self) -> str:
-        
-        '''
-            This assumes that:
-
-                - the *.py file from which the consumer is calling this method is stored into <root>/src;
-                - the Dockerfile is placed into <root>/.devcontainer folder instead.
-
-            Example:
-
-                os.path.join(os.path.abspath(os.curdir).replace("src", ".devcontainer"), "Dockerfile")
-        '''
-        
-        dockerfile_path : str = os.path.join(
-            os.path.abspath(os.curdir).replace("src", ".devcontainer"), 
-            "Dockerfile"
-        )
-
-        return dockerfile_path
-class LanguageChecker():
-
-    '''Collects all the logic related to Python language checks.'''
-
-    def get_version_status(self, required : Tuple[int, int, int] = (3, 12, 1)) -> str:
-
-        '''Returns a warning message if the installed Python version doesn't match the required one.'''
-
-        installed : Tuple[int, int, int] = (sys.version_info.major, sys.version_info.minor, sys.version_info.micro)
-        
-        if installed == required:
-            return _MessageCollection.installed_python_version_matching(installed = installed, required = required)
-        else:
-            return _MessageCollection.installed_python_version_not_matching(installed = installed, required = required)
-        
 # MAIN
 if __name__ == "__main__":
     pass

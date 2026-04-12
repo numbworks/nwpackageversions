@@ -1,0 +1,21 @@
+{
+	"name": "main",
+	"image": "nwpackageversions:main",
+	"initializeCommand": "docker build -f .devcontainer/main/Dockerfile -t nwpackageversions:main .",
+	"runArgs": ["--name", "nwpackageversions-main"],
+	"containerEnv": {
+		"TZ": "Europe/Stockholm",
+		"DEVCONTAINER_NAME": "main"
+	},
+	"customizations": {
+		"vscode": {
+			"settings": {},
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"shd101wyy.markdown-preview-enhanced"
+			]
+		}
+	},
+	"mounts": []
+}
