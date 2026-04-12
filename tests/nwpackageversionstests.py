@@ -6,7 +6,6 @@ import unittest
 from datetime import datetime
 from parameterized import parameterized
 from requests import Response
-from subprocess import CompletedProcess
 from time import time
 from typing import Any, Literal, Optional, Callable, Tuple, cast
 from unittest.mock import Mock, patch, mock_open, MagicMock
