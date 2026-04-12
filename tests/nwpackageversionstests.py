@@ -1169,7 +1169,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         # Act, Assert
         with self.assertRaises(expected_exception = Exception, msg = expected):
             requirement_checker : RequirementChecker = RequirementChecker()
-            requirement_checker.check(file_path = file_path, waiting_time = waiting_time)
+            requirement_checker.get_summary(file_path = file_path, waiting_time = waiting_time)
     def test_check_shouldreturnexpectedrequirementsummaryandlogexpectedmessages_wheninvoked(self):
         
         # Arrange
@@ -1241,7 +1241,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
             sleeping_function = sleeping_function_mock
 
         )
-        actual : RequirementSummary = requirement_checker.check(
+        actual : RequirementSummary = requirement_checker.get_summary(
             file_path = file_path, 
             only_stable_releases = only_stable_releases, 
             waiting_time = waiting_time
@@ -1275,7 +1275,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        requirement_summary : Optional[RequirementSummary] = requirement_checker.try_check(
+        requirement_summary : Optional[RequirementSummary] = requirement_checker.try_get_status(
             file_path = file_path, 
             only_stable_releases = only_stable_releases, 
             waiting_time = waiting_time
@@ -1331,7 +1331,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        requirement_checker.log_requirement_summary(requirement_summary = requirement_summary)
+        requirement_checker.__log_requirement_summary(requirement_summary = requirement_summary)
 
         # Assert
         self.assertEqual(messages, expected)
