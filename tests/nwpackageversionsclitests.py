@@ -1,15 +1,16 @@
 # GLOBAL MODULES
-from io import StringIO
 import unittest
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
+from io import StringIO
 from parameterized import parameterized
-from typing import Optional, Tuple
-from unittest.mock import MagicMock, Mock, patch
+from typing import Any, Tuple
+from unittest.mock import MagicMock, patch
 
 # LOCAL MODULES
 import sys, os
 sys.path.append(os.path.dirname(__file__).replace('tests', 'src'))
-from nwpackageversionscli import CLISTRING, APFactory, AsciiBannerManager, _MessageCollection, CLIValidator
+from nwpackageversions import RequirementChecker, RuntimeChecker
+from nwpackageversionscli import CLISTRING, APFactory, AsciiBannerManager, _MessageCollection, CLIManager, CLIValidator
 
 # SUPPORT METHODS
 # TEST CLASSES
@@ -162,6 +163,115 @@ class APFactoryTestCase(unittest.TestCase):
         with patch("sys.stderr", new_callable = StringIO):
             with self.assertRaises(SystemExit):
                 argument_parser.parse_args(args_list)
+class CLIManagerTestCase(unittest.TestCase):
+
+    def test_parse_shouldlogstatusanddispatchtoruntimechecker_whencommandisruntime(self):
+
+        # Arrange
+        expected : str = "Runtime Status"
+        args : Namespace = Namespace(command = CLISTRING.COMMAND_RUNTIME_NAME, required = (3, 12, 5))
+        
+        ap_mock : MagicMock = MagicMock(spec = ArgumentParser)
+        ap_mock.parse_args.return_value = args
+        
+        ap_factory : MagicMock = MagicMock(spec = APFactory)
+        ap_factory.create.return_value = ap_mock
+        
+        runtime_checker : MagicMock = MagicMock(spec = RuntimeChecker)
+        runtime_checker.try_get_status.return_value = expected
+        
+        logging_function : MagicMock = MagicMock()
+        
+        cli_manager : CLIManager = CLIManager(
+            ap_factory = ap_factory,
+            runtime_checker = runtime_checker,
+            logging_function = logging_function
+        )
+
+        # Act
+        cli_manager.parse()
+
+        # Assert
+        runtime_checker.try_get_status.assert_called_once_with(required = args.required)
+        logging_function.assert_any_call(expected)
+    def test_parse_shouldlogstatusanddispatchtorequirementchecker_whencommandisrequirements(self):
+
+        # Arrange
+        expected : str = "Requirements Status"
+        args : Namespace = Namespace(
+            command = CLISTRING.COMMAND_REQUIREMENTS_NAME, 
+            file_path = "C:/Dockerfile", 
+            only_stable_releases = True, 
+            waiting_time = 5
+        )
+        
+        ap_mock : MagicMock = MagicMock(spec = ArgumentParser)
+        ap_mock.parse_args.return_value = args
+        
+        ap_factory : MagicMock = MagicMock(spec = APFactory)
+        ap_factory.create.return_value = ap_mock
+        
+        requirement_checker : MagicMock = MagicMock(spec = RequirementChecker)
+        requirement_checker.try_get_status.return_value = expected
+        
+        logging_function : MagicMock = MagicMock()
+        
+        cli_manager : CLIManager = CLIManager(
+            ap_factory = ap_factory,
+            requirement_checker = requirement_checker,
+            logging_function = logging_function
+        )
+
+        # Act
+        cli_manager.parse()
+
+        # Assert
+        requirement_checker.try_get_status.assert_called_once_with(
+            file_path = args.file_path,
+            only_stable_releases = args.only_stable_releases,
+            waiting_time = args.waiting_time
+        )
+        logging_function.assert_any_call(expected)
+    def test_parse_shouldlogexceptionmessage_whenexceptionisraised(self):
+
+        # Arrange
+        expected : str = "Unexpected Error"
+        ap_factory : MagicMock = MagicMock(spec = APFactory)
+        ap_factory.create.side_effect = Exception(expected)
+        
+        logging_function : MagicMock = MagicMock()
+        
+        cli_manager : CLIManager = CLIManager(
+            ap_factory = ap_factory,
+            logging_function = logging_function
+        )
+
+        # Act
+        cli_manager.parse()
+
+        # Assert
+        logging_function.assert_any_call(expected)
+    def test_parse_shoulddonothing_whensystemexitoccurs(self):
+
+        # Arrange
+        ap_factory : MagicMock = MagicMock(spec = APFactory)
+        ap_factory.create.side_effect = SystemExit()
+        
+        logging_function : MagicMock = MagicMock()
+        
+        cli_manager : CLIManager = CLIManager(
+            ap_factory = ap_factory,
+            logging_function = logging_function
+        )
+
+        # Act
+        cli_manager.parse()
+
+        # Assert
+        calls : list[Any] = logging_function.call_args_list
+
+        for call in calls:
+            self.assertNotIsInstance(call.args[0], SystemExit)
 
 # MAIN
 if __name__ == "__main__":
