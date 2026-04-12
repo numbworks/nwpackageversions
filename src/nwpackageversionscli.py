@@ -175,26 +175,11 @@ class APFactory():
             help = CLISTRING.OPTION_WAITINGTIME_HELP)
 
         return argument_parser
-class APAdapter():
-
-    '''Customizes argparse.ArgumentParser for this use case.'''
-
-    __ap_factory : APFactory
-
-    def __init__(self, ap_factory : APFactory = APFactory()) -> None:
-        self.__ap_factory = ap_factory
-
-    def parse_args(self) -> Namespace:
-
-        '''Parses provided arguments.'''
-
-        parser : ArgumentParser = self.__ap_factory.create()
-        return parser.parse_args()
 class CLIManager():
 
     '''Collects all the logic related to the CLI management.'''
 
-    __ap_adapter : APAdapter
+    __ap_factory : APFactory
     __ascii_banner_manager : AsciiBannerManager
     __runtime_checker : RuntimeChecker
     __requirement_checker : RequirementChecker
@@ -202,13 +187,13 @@ class CLIManager():
 
     def __init__(
         self, 
-        ap_adapter : APAdapter = APAdapter(), 
+        ap_factory : APFactory = APFactory(), 
         ascii_banner_manager : AsciiBannerManager = AsciiBannerManager(),
         runtime_checker : RuntimeChecker = RuntimeChecker(),
         requirement_checker : RequirementChecker = RequirementChecker(),
         logging_function : Callable[[str], None] = lambda msg : print(msg)) -> None:
         
-        self.__ap_adapter = ap_adapter
+        self.__ap_factory = ap_factory
         self.__ascii_banner_manager = ascii_banner_manager
         self.__runtime_checker = runtime_checker
         self.__requirement_checker = requirement_checker
@@ -223,12 +208,19 @@ class CLIManager():
 
     def parse(self) -> None:
 
-        '''Parses arguments and dispatches the logic to the appropriate checker.'''
+        '''
+            Parses arguments and dispatches the logic to the appropriate checker.
+
+            The SystemExit exception occurs when the command subparser is required but issn't provided.
+            SystemExit doesn't inherit from Exception and has no message, therefore we need to handle it accordingly.
+        '''
 
         try:
 
             self.__log_ascii_banner()
-            args : Namespace = self.__ap_adapter.parse_args()
+
+            argument_parser : ArgumentParser = self.__ap_factory.create()
+            args : Namespace = argument_parser.parse_args()
 
             if args.command == CLISTRING.COMMAND_RUNTIME_NAME:
                 self.__runtime_checker.try_get_status(required = args.required)
@@ -239,8 +231,10 @@ class CLIManager():
                     only_stable_releases = args.only_stable_releases,
                     waiting_time = args.waiting_time)
             
-        except Exception as e:
-            self.__logging_function(str(e))
+        except (Exception, SystemExit) as e:
+
+            if not isinstance(e, SystemExit):
+                self.__logging_function(str(e))
 
 # MAIN
 def main(): CLIManager().parse()
