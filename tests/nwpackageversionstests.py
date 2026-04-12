@@ -1201,15 +1201,44 @@ class RuntimeCheckerTestCase(unittest.TestCase):
     def test_getstatus_shouldreturnexpectedstring_wheninvoked(self, installed : Tuple[int, int, int], required : Tuple[int, int, int], expected : str):
 
         # Arrange
+        runtime_version_function : MagicMock = MagicMock(return_value = installed)
+        runtime_checker : RuntimeChecker = RuntimeChecker(runtime_version_function = runtime_version_function)
+
         # Act
-        with patch.object(sys, "version_info") as mocked_vi:
-            mocked_vi.major = installed[0]
-            mocked_vi.minor = installed[1]
-            mocked_vi.micro = installed[2]
-            actual : str = RuntimeChecker().get_status(required = required)
+        actual : str = runtime_checker.get_status(required = required)
 
         # Assert
-        self.assertEqual(expected, actual)
+        self.assertEqual(actual, expected)
+
+    def test_trygetstatus_shouldreturnexpectedstatus_whennoexceptionisraised(self):
+
+        # Arrange
+        installed : Tuple[int, int, int] = (3, 12, 1)
+        required : Tuple[int, int, int] = (3, 12, 1)
+        expected : str = "The installed Python version is matching the expected one (installed: '3.12.1', expected: '3.12.1')."
+        
+        runtime_version_function : MagicMock = MagicMock(return_value = installed)
+        runtime_checker : RuntimeChecker = RuntimeChecker(runtime_version_function = runtime_version_function)
+
+        # Act
+        actual : str = runtime_checker.try_get_status(required = required)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_trygetstatus_shouldreturnexceptionmessage_whenexceptionisraised(self):
+
+        # Arrange
+        expected : str = "Some error occurred."
+        required : Tuple[int, int, int] = (3, 12, 1)
+        
+        runtime_version_function : MagicMock = MagicMock(side_effect = Exception(expected))
+        runtime_checker : RuntimeChecker = RuntimeChecker(runtime_version_function = runtime_version_function)
+
+        # Act
+        actual : str = runtime_checker.try_get_status(required = required)
+
+        # Assert
+        self.assertEqual(actual, expected)
 class RequirementCheckerTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
