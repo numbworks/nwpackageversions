@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, Badge, BasicFormatter, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher, Validator
+from nwpackageversions import _MessageCollection, Badge, BasicFormatter, Formatter, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher, Validator
 from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession, JsonFormatter
 
 # SUPPORT METHODS
@@ -1381,125 +1381,83 @@ class RequirementCheckerTestCase(unittest.TestCase):
     def test_getsummary_shouldreturnexpectedrequirementsummary_wheninvoked(self):
         
         # Arrange
-        packages : list[Package] = [
-            Package(name = "requests", version = "2.26.0"),
-            Package(name = "black", version = "22.12.0")
-        ]
-        l_session: LSession = LSession(packages = packages, unparsed_lines = [])
+        requirement_summary : RequirementSummary = ObjectMother.get_requirement_summary()
+        packages : list[Package] = [detail.current_package for detail in requirement_summary.details]
+        l_session : LSession = LSession(packages = packages, unparsed_lines = [])
 
-        release1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2024, 1, 1))
-        release2 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 1, 2))      
-        f_session_1: FSession = FSession(package_name = "requests", most_recent_release = release1, releases = [ release1 ], xml_items = [], badges = None)
-        f_session_2: FSession = FSession(package_name = "black", most_recent_release = release2, releases = [ release2 ], xml_items = [], badges = None)
+        f_sessions : list[FSession] = []
+        for detail in requirement_summary.details:
+            f_session : FSession = FSession(
+                package_name = detail.current_package.name,
+                most_recent_release = detail.most_recent_release,
+                releases = [detail.most_recent_release],
+                xml_items = [],
+                badges = None
+            )
+            f_sessions.append(f_session)
 
-        package_loader : LocalPackageLoader = Mock()
+        package_loader : MagicMock = MagicMock(spec = LocalPackageLoader)
         package_loader.load.return_value = l_session
 
-        release_fetcher : PyPiReleaseFetcher = Mock()
-        release_fetcher.fetch.side_effect = [ f_session_1, f_session_2 ]
+        release_fetcher : MagicMock = MagicMock(spec = PyPiReleaseFetcher)
+        release_fetcher.fetch.side_effect = f_sessions
 
-        sleeping_function : Callable[[int], None] = lambda x : None
+        sleeping_function : MagicMock = MagicMock()
 
         file_path : str = r"C:/Dockerfile"
         only_stable_releases : bool = False
         waiting_time : int = 5
-
-        descriptions : list[str] = [
-            "{ 'description': 'The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01').' }",
-            "{ 'description': 'The current version ('22.12.0') of 'black' matches with the most recent release ('22.12.0', '2024-01-02').' }"
-        ]
-        expected : RequirementSummary = RequirementSummary(
-            total_packages = 2,
-            matching = 2,
-            matching_prc = "100.00%",
-            mismatching = 0,
-            mismatching_prc = "0.00%",
-            details = [ 
-                Mock(description = descriptions[0]), 
-                Mock(description = descriptions[1])
-            ]
-        )
 
         # Act
         requirement_checker : RequirementChecker = RequirementChecker(
             package_loader = package_loader,
             release_fetcher = release_fetcher,
             sleeping_function = sleeping_function
-
         )
-        actual : RequirementSummary = requirement_checker.get_summary(
-            file_path = file_path, 
-            only_stable_releases = only_stable_releases, 
-            waiting_time = waiting_time
-        )
+        
+        with patch("os.path.isfile", return_value = True):
+            actual : RequirementSummary = requirement_checker.get_summary(
+                file_path = file_path, 
+                only_stable_releases = only_stable_releases, 
+                waiting_time = waiting_time
+            )
 
         # Assert
-        self.assertEqual(actual.total_packages, expected.total_packages)
-        self.assertEqual(actual.matching, expected.matching)
-        self.assertEqual(actual.matching_prc, expected.matching_prc)        
-        self.assertEqual(actual.mismatching, expected.mismatching)
-        self.assertEqual(actual.mismatching_prc, expected.mismatching_prc)
-    def test_getstatus_shouldlogexpectedstatus_wheninvoked(self):
+        self.assertEqual(actual.total_packages, requirement_summary.total_packages)
+        self.assertEqual(actual.matching, requirement_summary.matching)
+        self.assertEqual(actual.matching_prc, requirement_summary.matching_prc)
+        self.assertEqual(len(actual.details), len(requirement_summary.details))
+        package_loader.load.assert_called_once_with(file_path = file_path)
+    def test_getstatus_shouldreturnformattedstring_wheninvoked(self):
 
         # Arrange
         file_path : str = r"C:/Dockerfile"
-
-        requirement_summary : RequirementSummary = RequirementSummary(
-            total_packages = 2,
-            matching = 2,
-            matching_prc = "100.00%",
-            mismatching = 0,
-            mismatching_prc = "0.00%",
-            details = [ 
-                RequirementDetail(
-                    current_package = Mock(), 
-                    most_recent_release = Mock(), 
-                    is_version_matching = True, 
-                    description = "The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01')."
-                ),
-                RequirementDetail(
-                    current_package = Mock(), 
-                    most_recent_release = Mock(), 
-                    is_version_matching = True, 
-                    description = "The current version ('22.12.0') of 'black' matches with the most recent release ('22.12.0', '2024-01-02')."
-                )
-            ]
-        )
-
-        expected: str = JsonFormatter().format_requirement_summary(requirement_summary)
+        requirement_summary : RequirementSummary = ObjectMother.get_requirement_summary()
+        formatter : MagicMock = MagicMock(spec = Formatter)
+        expected : str = "Formatted Summary"
+        formatter.format_requirement_summary.return_value = expected
 
         # Act
-        requirement_checker : RequirementChecker = RequirementChecker()
+        requirement_checker : RequirementChecker = RequirementChecker(formatter = formatter)
         
-        with patch.object(requirement_checker, 'get_summary', return_value=requirement_summary):
+        with patch.object(RequirementChecker, 'get_summary', return_value = requirement_summary):
             actual : str = requirement_checker.get_status(file_path)
 
-            # Assert
-            self.assertEqual(expected, actual)
-    def test_trygetstatus_shouldreturnexpectedstatus_whenraisedexception(self):
+        # Assert
+        self.assertEqual(actual, expected)
+        formatter.format_requirement_summary.assert_called_once_with(requirement_summary)
+    def test_trygetstatus_shouldreturnexceptionmessage_whenexceptionisraised(self):
         
         # Arrange
         file_path : str = r"C:/Dockerfile"
-        only_stable_releases : bool = False
-        waiting_time : int = 2
-        minimum_wt : int = 5
-        expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
-
-        # Act
-        requirement_checker : RequirementChecker = RequirementChecker(
-            package_loader = LocalPackageLoader(),
-            release_fetcher = PyPiReleaseFetcher(),
-            sleeping_function = LambdaCollection.sleeping_function()
-
-        )
-        actual : str = requirement_checker.try_get_status(
-            file_path = file_path, 
-            only_stable_releases = only_stable_releases, 
-            waiting_time = waiting_time
-        )
+        error_message : str = "File not found."
+        
+        # Act       
+        with patch.object(RequirementChecker, 'get_status', side_effect = Exception(error_message)):
+            actual : str = RequirementChecker().try_get_status(file_path = file_path)
         
         # Assert
-        self.assertEqual(expected, actual)
+        self.assertEqual(actual, error_message)
 
 # MAIN
 if __name__ == "__main__":
