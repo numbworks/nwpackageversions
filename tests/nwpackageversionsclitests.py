@@ -1,14 +1,15 @@
 # GLOBAL MODULES
+from io import StringIO
 import unittest
 from argparse import ArgumentParser, ArgumentTypeError, Namespace
 from parameterized import parameterized
 from typing import Optional, Tuple
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 # LOCAL MODULES
 import sys, os
 sys.path.append(os.path.dirname(__file__).replace('tests', 'src'))
-from nwpackageversionscli import AsciiBannerManager, _MessageCollection, CLIValidator
+from nwpackageversionscli import CLISTRING, APFactory, AsciiBannerManager, _MessageCollection, CLIValidator
 
 # SUPPORT METHODS
 # TEST CLASSES
@@ -114,6 +115,53 @@ class CLIValidatorTestCase(unittest.TestCase):
             validator.validate_required(required = required)
 
         self.assertEqual(str(context.exception), expected)
+class APFactoryTestCase(unittest.TestCase):
+
+    def test_create_shouldreturnargumentparserwithruntimecommand_wheninvoked(self):
+
+        # Arrange
+        cli_validator : MagicMock = MagicMock(spec = CLIValidator)
+        ap_factory : APFactory = APFactory(cli_validator = cli_validator)
+        version_str : str = "3.12.5"
+        expected_version : Tuple[int, int, int] = (3, 12, 5)
+        cli_validator.validate_required.return_value = expected_version
+        
+        args_list : list[str] = [CLISTRING.COMMAND_RUNTIME_NAME, "--required", version_str]
+
+        # Act
+        argument_parser : ArgumentParser = ap_factory.create()
+        actual : Namespace = argument_parser.parse_args(args_list)
+
+        # Assert
+        self.assertEqual(actual.command, CLISTRING.COMMAND_RUNTIME_NAME)
+        self.assertEqual(actual.required, expected_version)
+        cli_validator.validate_required.assert_called_once_with(version_str)
+    def test_create_shouldreturnargumentparserwithrequirementscommandanddefaultvalues_wheninvoked(self):
+
+        # Arrange
+        ap_factory : APFactory = APFactory()
+        file_path : str = "C:/Dockerfile"
+        args_list : list[str] = [CLISTRING.COMMAND_REQUIREMENTS_NAME, "--file_path", file_path]
+
+        # Act
+        argument_parser : ArgumentParser = ap_factory.create()
+        actual : Namespace = argument_parser.parse_args(args_list)
+
+        # Assert
+        self.assertEqual(actual.command, CLISTRING.COMMAND_REQUIREMENTS_NAME)
+        self.assertEqual(actual.file_path, file_path)
+        self.assertEqual(actual.only_stable_releases, CLISTRING.OPTION_ONLYSTABLERELEASES_DEFAULT)
+        self.assertEqual(actual.waiting_time, CLISTRING.OPTION_WAITINGTIME_DEFAULT)
+    def test_create_shouldraiseerror_whenrequiredruntimeargumentismissing(self):
+
+        # Arrange
+        args_list : list[str] = [CLISTRING.COMMAND_RUNTIME_NAME]
+        argument_parser : ArgumentParser = APFactory().create()
+
+        # Act, Assert
+        with patch("sys.stderr", new_callable = StringIO):
+            with self.assertRaises(SystemExit):
+                argument_parser.parse_args(args_list)
 
 # MAIN
 if __name__ == "__main__":
