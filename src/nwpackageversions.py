@@ -19,7 +19,7 @@ from re import Match, Pattern
 from requests import Response
 from subprocess import CompletedProcess
 from time import sleep
-from typing import Any, Callable, Final, Literal, Optional, Tuple, cast
+from typing import Any, Callable, Final, Literal, Optional, Tuple, cast, Protocol, runtime_checkable
 from xml.etree.ElementTree import Element
 
 # LOCAL MODULES
@@ -382,8 +382,18 @@ class Validator():
         if not os.path.isfile(file_path):
             raise Exception(_MessageCollection.provided_file_path_doesnt_exist(file_path))
 
+# PROTOCOLS
+@runtime_checkable
+class Formatter(Protocol):
+
+    '''This protocol defines the interface for formatting objects.'''
+
+    def format_requirement_detail(self, requirement_detail : RequirementDetail) -> str: ...
+    def format_requirement_details(self, requirement_details : list[RequirementDetail]) -> str: ...
+    def format_requirement_summary(self, requirement_summary : RequirementSummary, with_details : bool = True) -> str: ...
+        
 # CLASSES
-class Formatter():
+class JsonFormatter():
 
     '''This class collects all the logic related to formatting objects.'''
 
@@ -418,6 +428,45 @@ class Formatter():
             " }")
 
         if (with_details):
+            formatted = str.join("\n", [formatted, self.format_requirement_details(requirement_summary.details)])
+        
+        return formatted
+class BasicFormatter():
+
+    '''This class collects all the logic related to formatting objects.'''
+
+    def format_requirement_detail(self, requirement_detail : RequirementDetail) -> str:
+
+        '''Formats the provided object.'''
+
+        return requirement_detail.description
+    def format_requirement_details(self, requirement_details : list[RequirementDetail]) -> str:
+
+        '''Formats the provided object.'''
+
+        lines : list[str] = []
+
+        for requirement_detail in requirement_details:
+            lines.append(self.format_requirement_detail(requirement_detail))
+
+        return str.join("\n", lines)
+    def format_requirement_summary(self, requirement_summary : RequirementSummary, with_details : bool = True) -> str:
+
+        '''Formats the provided object.'''
+
+        lines : list[str] = [
+            f"total_packages: '{str(requirement_summary.total_packages)}'",
+            f"matching: '{str(requirement_summary.matching)}'",
+            f"matching_prc: '{requirement_summary.matching_prc}'",
+            f"mismatching: '{str(requirement_summary.mismatching)}'",
+            f"mismatching_prc: '{requirement_summary.mismatching_prc}'",
+            f"details: '{len(requirement_summary.details)}'"
+        ]
+
+        formatted : str = str.join("\n", lines)
+
+        if (with_details):
+            formatted += "\n"
             formatted = str.join("\n", [formatted, self.format_requirement_details(requirement_summary.details)])
         
         return formatted
@@ -931,6 +980,34 @@ class PyPiReleaseFetcher():
         )
 
         return f_session
+class RuntimeChecker():
+
+    '''Collects all the logic related to Python runtime checks.'''
+
+    __runtime_version_function : Callable[[], Tuple[int, int, int]]
+
+    def __init__(self, runtime_version_function : Callable[[], Tuple[int, int, int]] = LambdaCollection.runtime_version_function()) -> None:
+
+        self.__runtime_version_function = runtime_version_function
+
+    def get_status(self, required : Tuple[int, int, int]) -> str:
+
+        '''Returns a warning message if the installed Python version doesn't match the required one.'''
+
+        runtime_version : Tuple[int, int, int] = self.__runtime_version_function()
+        
+        if runtime_version == required:
+            return _MessageCollection.installed_python_version_matching(installed = runtime_version, required = required)
+        else:
+            return _MessageCollection.installed_python_version_not_matching(installed = runtime_version, required = required)
+    def try_get_status(self, required : Tuple[int, int, int]) -> str:
+
+        try:
+
+            return self.get_status(required = required)
+        
+        except Exception as e:
+            return str(e)
 class RequirementChecker():
 
     '''This class collects all the logic related to requirement status checking.'''
@@ -944,7 +1021,7 @@ class RequirementChecker():
             self, 
             package_loader : LocalPackageLoader = LocalPackageLoader(),
             release_fetcher : PyPiReleaseFetcher = PyPiReleaseFetcher(),
-            formatter : Formatter = Formatter(),
+            formatter : Formatter = BasicFormatter(),
             sleeping_function : Callable[[int], None] = LambdaCollection.sleeping_function()
             ) -> None:
       
@@ -1104,34 +1181,6 @@ class RequirementChecker():
 
         except Exception as e:
 
-            return str(e)
-class RuntimeChecker():
-
-    '''Collects all the logic related to Python runtime checks.'''
-
-    __runtime_version_function : Callable[[], Tuple[int, int, int]]
-
-    def __init__(self, runtime_version_function : Callable[[], Tuple[int, int, int]] = LambdaCollection.runtime_version_function()) -> None:
-
-        self.__runtime_version_function = runtime_version_function
-
-    def get_status(self, required : Tuple[int, int, int]) -> str:
-
-        '''Returns a warning message if the installed Python version doesn't match the required one.'''
-
-        runtime_version : Tuple[int, int, int] = self.__runtime_version_function()
-        
-        if runtime_version == required:
-            return _MessageCollection.installed_python_version_matching(installed = runtime_version, required = required)
-        else:
-            return _MessageCollection.installed_python_version_not_matching(installed = runtime_version, required = required)
-    def try_get_status(self, required : Tuple[int, int, int]) -> str:
-
-        try:
-
-            return self.get_status(required = required)
-        
-        except Exception as e:
             return str(e)
 
 # MAIN

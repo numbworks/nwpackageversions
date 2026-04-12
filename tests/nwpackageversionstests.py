@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher
-from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession, Formatter
+from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession, JsonFormatter
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -1246,7 +1246,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
             ]
         )
 
-        expected: str = Formatter().format_requirement_summary(requirement_summary)
+        expected: str = JsonFormatter().format_requirement_summary(requirement_summary)
 
         # Act
         requirement_checker : RequirementChecker = RequirementChecker()
