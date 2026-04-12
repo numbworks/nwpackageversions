@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher
-from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession
+from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession, Formatter
 
 # SUPPORT METHODS
 class SupportMethodProvider():
@@ -1109,7 +1109,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         self.release2 : Release = Release(package_name = "pandas", version = "2.2.3", date = datetime(2024, 9, 20, 13, 8, 42))
         self.expected_tpl2 : Tuple[bool, str] = (False, _MessageCollection.current_version_doesnt_match(self.package2, self.release2))
 
-    def test_requirementchecker_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
+    def test_compare_shouldreturnexpectedtuple_whenversionsmatch(self) -> None:
         
         # Arrange
         # Act
@@ -1118,7 +1118,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(actual, self.expected_tpl1)
-    def test_requirementchecker_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
+    def test_compare_shouldreturnexpectedtuple_whenversionsmismatch(self) -> None:
         
         # Arrange
         # Act
@@ -1158,7 +1158,23 @@ class RequirementCheckerTestCase(unittest.TestCase):
         
         # Assert
         self.assertEqual(actual, expected)  
-    def test_check_shouldraiseexpectedexceptionandmessage_whenwaitingtimelessthanminimum(self):
+    
+    def test_getdefaultdevcointainerdockerfilepath_shouldreturnexpectedpath_wheninvoked(self) -> None:
+        
+        # Arrange
+        expected: str = os.path.join("/path/.devcontainer", "Dockerfile")
+
+        # Act, Assert
+        with patch('os.path.abspath') as mock_abspath:
+
+            mock_abspath.return_value = r"/path/src"
+
+            requirement_checker : RequirementChecker = RequirementChecker()
+            actual : str = requirement_checker.get_default_devcointainer_dockerfile_path()
+
+            self.assertEqual(actual, expected)
+
+    def test_getsummary_shouldraiseexpectedexceptionandmessage_whenwaitingtimelessthanminimum(self):
         
         # Arrange
         file_path : str = r"C:/Dockerfile"
@@ -1170,7 +1186,7 @@ class RequirementCheckerTestCase(unittest.TestCase):
         with self.assertRaises(expected_exception = Exception, msg = expected):
             requirement_checker : RequirementChecker = RequirementChecker()
             requirement_checker.get_summary(file_path = file_path, waiting_time = waiting_time)
-    def test_check_shouldreturnexpectedrequirementsummaryandlogexpectedmessages_wheninvoked(self):
+    def test_getsummary_shouldreturnexpectedrequirementsummary_wheninvoked(self):
         
         # Arrange
         packages : list[Package] = [
@@ -1184,15 +1200,13 @@ class RequirementCheckerTestCase(unittest.TestCase):
         f_session_1: FSession = FSession(package_name = "requests", most_recent_release = release1, releases = [ release1 ], xml_items = [], badges = None)
         f_session_2: FSession = FSession(package_name = "black", most_recent_release = release2, releases = [ release2 ], xml_items = [], badges = None)
 
-        package_loader_mock : LocalPackageLoader = Mock()
-        package_loader_mock.load.return_value = l_session
+        package_loader : LocalPackageLoader = Mock()
+        package_loader.load.return_value = l_session
 
-        release_fetcher_mock : PyPiReleaseFetcher = Mock()
-        release_fetcher_mock.fetch.side_effect = [ f_session_1, f_session_2 ]
+        release_fetcher : PyPiReleaseFetcher = Mock()
+        release_fetcher.fetch.side_effect = [ f_session_1, f_session_2 ]
 
-        messages: list[str] = []
-        logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
-        sleeping_function_mock : Callable[[int], None] = lambda x : None
+        sleeping_function : Callable[[int], None] = lambda x : None
 
         file_path : str = r"C:/Dockerfile"
         only_stable_releases : bool = False
@@ -1214,31 +1228,11 @@ class RequirementCheckerTestCase(unittest.TestCase):
             ]
         )
 
-        expected_messages: list[str] = [
-            _MessageCollection.status_checking_operation_started(),
-            _MessageCollection.list_local_packages_will_be_loaded(file_path),
-            _MessageCollection.waiting_time_will_be(waiting_time),
-            _MessageCollection.x_local_packages_found_successfully_loaded(l_session.packages),
-            _MessageCollection.x_unparsed_lines(l_session.unparsed_lines),
-            _MessageCollection.starting_to_evaluate_status_local_package(),
-            _MessageCollection.total_estimated_time_will_be(waiting_time, len(l_session.packages)),
-            _MessageCollection.only_stable_releases_is(only_stable_releases),
-            _MessageCollection.status_evaluation_operation_successfully_loaded(),
-            descriptions[0],
-            descriptions[1],
-            _MessageCollection.starting_creation_requirement_summary(),
-            _MessageCollection.requirement_summary_successfully_created(),
-            str(expected),
-            _MessageCollection.status_checking_operation_completed()
-        ]        
-
         # Act
         requirement_checker : RequirementChecker = RequirementChecker(
-            package_loader = package_loader_mock,
-            release_fetcher = release_fetcher_mock,
-            logging_function = logging_function_mock,
-            list_logging_function = LambdaCollection.list_logging_function(),
-            sleeping_function = sleeping_function_mock
+            package_loader = package_loader,
+            release_fetcher = release_fetcher,
+            sleeping_function = sleeping_function
 
         )
         actual : RequirementSummary = requirement_checker.get_summary(
@@ -1253,47 +1247,11 @@ class RequirementCheckerTestCase(unittest.TestCase):
         self.assertEqual(actual.matching_prc, expected.matching_prc)        
         self.assertEqual(actual.mismatching, expected.mismatching)
         self.assertEqual(actual.mismatching_prc, expected.mismatching_prc)
-        self.assertEqual(messages, expected_messages)
-    def test_trycheck_shouldreturnnoneandlogexpectedmessage_whenraisedexception(self):
-        
+    def test_getstatus_shouldlogexpectedstatus_wheninvoked(self):
+
         # Arrange
         file_path : str = r"C:/Dockerfile"
-        only_stable_releases : bool = False
-        waiting_time : int = 2
-        minimum_wt : int = 5
-        expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
 
-        messages : list[str] = []
-        logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
-
-        # Act
-        requirement_checker : RequirementChecker = RequirementChecker(
-            package_loader = LocalPackageLoader(),
-            release_fetcher = PyPiReleaseFetcher(),
-            logging_function = logging_function_mock,
-            list_logging_function = LambdaCollection.list_logging_function(),
-            sleeping_function = LambdaCollection.sleeping_function()
-
-        )
-        requirement_summary : Optional[RequirementSummary] = requirement_checker.try_get_status(
-            file_path = file_path, 
-            only_stable_releases = only_stable_releases, 
-            waiting_time = waiting_time
-        )
-        
-        # Assert
-        self.assertIsNone(requirement_summary)
-        self.assertEqual(messages[0], expected)
-    def test_logrequirementsummary_shouldlogexpectedmessages_wheninvoked(self):
-
-        # Arrange
-        messages: list[str] = []
-        logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
-
-        descriptions : list[str] = [
-            "{ 'description': 'The current version ('2.26.0') of 'requests' matches with the most recent release ('2.26.0', '2024-01-01').' }",
-            "{ 'description': 'The current version ('22.12.0') of 'black' matches with the most recent release ('22.12.0', '2024-01-02').' }"
-        ]
         requirement_summary : RequirementSummary = RequirementSummary(
             total_packages = 2,
             matching = 2,
@@ -1316,39 +1274,40 @@ class RequirementCheckerTestCase(unittest.TestCase):
             ]
         )
 
-        expected: list[str] = [
-            str(requirement_summary),
-            descriptions[0],
-            descriptions[1]            
-        ]
+        expected: str = Formatter().format_requirement_summary(requirement_summary)
+
+        # Act
+        requirement_checker : RequirementChecker = RequirementChecker()
+        
+        with patch.object(requirement_checker, 'get_summary', return_value=requirement_summary):
+            actual : str = requirement_checker.get_status(file_path)
+
+            # Assert
+            self.assertEqual(expected, actual)
+    def test_trygetstatus_shouldreturnexpectedstatus_whenraisedexception(self):
+        
+        # Arrange
+        file_path : str = r"C:/Dockerfile"
+        only_stable_releases : bool = False
+        waiting_time : int = 2
+        minimum_wt : int = 5
+        expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
 
         # Act
         requirement_checker : RequirementChecker = RequirementChecker(
             package_loader = LocalPackageLoader(),
             release_fetcher = PyPiReleaseFetcher(),
-            logging_function = logging_function_mock,
-            list_logging_function = LambdaCollection.list_logging_function(),
             sleeping_function = LambdaCollection.sleeping_function()
 
         )
-        requirement_checker.__log_requirement_summary(requirement_summary = requirement_summary)
-
-        # Assert
-        self.assertEqual(messages, expected)
-    def test_getdefaultdevcointainerdockerfilepath_shouldreturnexpectedpath_wheninvoked(self) -> None:
+        actual : str = requirement_checker.try_get_status(
+            file_path = file_path, 
+            only_stable_releases = only_stable_releases, 
+            waiting_time = waiting_time
+        )
         
-        # Arrange
-        expected: str = os.path.join("/path/.devcontainer", "Dockerfile")
-
-        # Act, Assert
-        with patch('os.path.abspath') as mock_abspath:
-
-            mock_abspath.return_value = r"/path/src"
-
-            requirement_checker : RequirementChecker = RequirementChecker()
-            actual : str = requirement_checker.get_default_devcointainer_dockerfile_path()
-
-            self.assertEqual(actual, expected)
+        # Assert
+        self.assertEqual(expected, actual)
 class RuntimeCheckerTestCase(unittest.TestCase):
 
     @parameterized.expand([
@@ -1367,7 +1326,6 @@ class RuntimeCheckerTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(expected, actual)
-
 
 # Main
 if __name__ == "__main__":

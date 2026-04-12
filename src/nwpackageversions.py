@@ -1050,10 +1050,10 @@ class RequirementChecker():
             It raises an Exception if an issue arises.
         '''
 
-        minimum_waiting_time : int = 5
+        minimum_wt : int = 5
 
-        if waiting_time < minimum_waiting_time:
-            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_waiting_time))
+        if waiting_time < minimum_wt:
+            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt))
 
         l_session : LSession = self.__package_loader.load(file_path = file_path)
         
