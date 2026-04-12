@@ -163,6 +163,17 @@ class _MessageCollectionLambdaCollection():
     @staticmethod
     def python_version_unexpected_output() -> str:
         return "The 'python --version' command returned an unexpected output."
+class _MessageCollectionValidator():
+
+    '''Collects all the messages used for logging and for the exceptions used by Validator.'''
+
+    @staticmethod
+    def waiting_time_cant_be_less_than(waiting_time : int, expected : int) -> str:
+        return f"Waiting time ('{str(waiting_time)}') can't be less than {expected} seconds."
+
+    @staticmethod
+    def provided_file_path_doesnt_exist(file_path : str) -> str:
+        return f"The provided 'file_path' doesn't exist: '{file_path}'."
 class _MessageCollectionLocalPackageLoader():
 
     '''Collects all the messages used for logging and for the exceptions used by LocalPackageLoader.'''
@@ -177,9 +188,6 @@ class _MessageCollectionRequirementChecker():
 
     '''Collects all the messages used for logging and for the exceptions used by RequirementChecker.'''
 
-    @staticmethod
-    def waiting_time_cant_be_less_than(waiting_time : int, expected : int) -> str:
-        return f"Waiting time ('{str(waiting_time)}') can't be less than {expected} seconds."
     @staticmethod
     def current_version_matches(current_package : Package, most_recent_release : Release) -> str:
         return f"The current version ('{current_package.version}') of '{current_package.name}' matches with the most recent release ('{most_recent_release.version}', '{most_recent_release.date.strftime("%Y-%m-%d")}')."
@@ -262,6 +270,7 @@ class _MessageCollectionRuntimeChecker():
         return f"Warning! The installed Python is not matching the expected one (installed: '{installed_str}', expected: '{required_str}')."
 class _MessageCollection(
     _MessageCollectionLambdaCollection,
+    _MessageCollectionValidator,
     _MessageCollectionLocalPackageLoader,
     _MessageCollectionRequirementChecker,
     _MessageCollectionPyPiReleaseFetcher,
@@ -361,6 +370,25 @@ class LambdaCollection():
         version_tpl : Tuple[int, int, int] = (int(version_lst[0]), int(version_lst[1]), int(version_lst[2]))
 
         return lambda : version_tpl
+class Validator():
+
+    '''Collects all validation methods.'''
+
+    @staticmethod
+    def validate_waiting_time(waiting_time : int) -> None:
+
+        minimum_wt : int = 5
+
+        if waiting_time < minimum_wt:
+            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt))
+
+    @staticmethod
+    def validate_file_path(file_path : str) -> None:
+
+        '''Returns file_path or raises Exception.'''
+
+        if not os.path.isfile(file_path):
+            raise Exception(_MessageCollection.provided_file_path_doesnt_exist(file_path))
 
 # CLASSES
 class Formatter():
@@ -1050,10 +1078,8 @@ class RequirementChecker():
             It raises an Exception if an issue arises.
         '''
 
-        minimum_wt : int = 5
-
-        if waiting_time < minimum_wt:
-            raise Exception(_MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt))
+        Validator().validate_file_path(file_path)
+        Validator().validate_waiting_time(waiting_time)
 
         l_session : LSession = self.__package_loader.load(file_path = file_path)
         
