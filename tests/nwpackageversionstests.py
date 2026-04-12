@@ -15,6 +15,101 @@ from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollect
 from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession, JsonFormatter
 
 # SUPPORT METHODS
+class ObjectMother():
+
+    '''Collects all the DTOs required by the unit tests.'''
+
+    @staticmethod
+    def get_package_1() -> Package:
+
+        package_1 : Package = Package(name = "black", version = "22.12.0")
+
+        return package_1
+    @staticmethod
+    def get_release_1() -> Release:
+
+        release_1 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 5, 15))
+
+        return release_1
+    @staticmethod
+    def get_requirement_detail_1() -> RequirementDetail:
+
+        requirement_detail_1 : RequirementDetail = RequirementDetail(
+            current_package = ObjectMother.get_package_1(),
+            most_recent_release = ObjectMother.get_release_1(),
+            is_version_matching = True,
+            description = "The current version matches the most recent release."
+        )
+
+        return requirement_detail_1
+
+    @staticmethod
+    def get_package_2() -> Package:
+
+        package_2 : Package = Package(name = "opencv-python", version = "4.5.0")
+
+        return package_2
+    @staticmethod
+    def get_release_2() -> Release:
+
+        release_2 : Release = Release(package_name = "opencv-python", version = "4.10.0", date = datetime(2023, 8, 12))
+
+        return release_2
+    @staticmethod
+    def get_requirement_detail_2() -> RequirementDetail:
+
+        requirement_detail_2 : RequirementDetail = RequirementDetail(
+            current_package = ObjectMother.get_package_2(),
+            most_recent_release = ObjectMother.get_release_2(),
+            is_version_matching = False,
+            description = "The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12')."
+        )
+
+        return requirement_detail_2
+
+    @staticmethod
+    def get_details() -> list[RequirementDetail]:
+
+        details : list[RequirementDetail] = [
+            ObjectMother.get_requirement_detail_1(), 
+            ObjectMother.get_requirement_detail_2()
+        ]
+
+        return details
+
+    @staticmethod
+    def get_lines() -> list[str]:
+
+        lines : list[str] = [
+            "total_packages: '2", 
+            "matching: '1'", 
+            "matching_prc: '50.00%'", 
+            "mismatching: '1'", 
+            "mismatching_prc: '50.00%'"
+        ]
+
+        return lines
+
+    @staticmethod
+    def get_expected() -> str:
+
+        expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
+
+        return expected
+
+    @staticmethod
+    def get_requirement_summary() -> RequirementSummary:
+
+        requirement_summary : RequirementSummary = RequirementSummary(
+            total_packages = 2,
+            matching = 1,
+            matching_prc = "50.00%",
+            mismatching = 1,
+            mismatching_prc = "50.00%",
+            details = ObjectMother.get_details()
+        )
+
+        return requirement_summary
 class SupportMethodProvider():
 
     '''Collection of generic purpose test-aiding methods.'''
@@ -553,77 +648,33 @@ class RequirementDetailTestCase(unittest.TestCase):
         self.assertEqual(actual_repr, self.expected_2)
 class RequirementSummaryTestCase(unittest.TestCase):
 
-    def setUp(self) -> None:
-        
-        self.package_1 : Package = Package(name = "black", version = "22.12.0")
-        self.release_1 : Release = Release(package_name = "black", version = "22.12.0", date = datetime(2024, 5, 15))
-        self.is_version_matching_1 : bool = True
-        self.description_1 : str = "The current version matches the most recent release."
-		
-        self.requirement_detail_1 : RequirementDetail = RequirementDetail(
-            current_package = self.package_1,
-            most_recent_release = self.release_1,
-            is_version_matching = self.is_version_matching_1,
-            description = self.description_1
-        )
-        
-        self.package_2 : Package = Package(name = "opencv-python", version = "4.5.0")
-        self.release_2 : Release = Release(package_name = "opencv-python", version = "4.10.0", date = datetime(2023, 8, 12))
-        self.is_version_matching_2 : bool = False
-        self.description_2 : str = "The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12')."
-		
-        self.requirement_detail2 : RequirementDetail = RequirementDetail(
-            current_package = self.package_2,
-            most_recent_release = self.release_2,
-            is_version_matching = self.is_version_matching_2,
-            description = self.description_2
-        )
-
-        self.total_packages : int = 2
-        self.matching : int = 1
-        self.matching_prc : str = "50.00%"
-        self.mismatching : int = 1
-        self.mismatching_prc : str = "50.00%"
-        self.details : list[RequirementDetail] = [
-			self.requirement_detail_1, 
-			self.requirement_detail2
-		]
-
-        self.expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
-    
-        self.requirement_summary : RequirementSummary = RequirementSummary(
-            total_packages = self.total_packages,
-            matching = self.matching,
-            matching_prc = self.matching_prc,
-            mismatching = self.mismatching,
-            mismatching_prc = self.mismatching_prc,
-            details = self.details
-        )    
-
     def test_requirementsummary_shouldinitializeasexpected_wheninvoked(self) -> None:
 	
         # Arrange
+        requirement_summary : RequirementSummary = ObjectMother.get_requirement_summary()
+
+        expected_total_packages : int = 2
+        expected_matching : int = 1
+        expected_matching_prc : str = "50.00%"
+        expected_mismatching : int = 1
+        expected_mismatching_prc : str = "50.00%"
+        expected_details : list[RequirementDetail] = [
+            ObjectMother.get_requirement_detail_1(),
+            ObjectMother.get_requirement_detail_2()
+        ] 
+
         # Act
         # Assert
-        self.assertEqual(self.requirement_summary.total_packages, self.total_packages)
-        self.assertEqual(self.requirement_summary.matching, self.matching)
-        self.assertEqual(self.requirement_summary.matching_prc, self.matching_prc)
-        self.assertEqual(self.requirement_summary.mismatching, self.mismatching)
-        self.assertEqual(self.requirement_summary.mismatching_prc, self.mismatching_prc)
-        self.assertEqual(len(self.requirement_summary.details), len(self.details))
+        self.assertEqual(expected_total_packages, requirement_summary.total_packages)
+        self.assertEqual(expected_matching, requirement_summary.matching)
+        self.assertEqual(expected_matching_prc, requirement_summary.matching_prc)
+        self.assertEqual(expected_mismatching, requirement_summary.mismatching)
+        self.assertEqual(expected_mismatching_prc, requirement_summary.mismatching_prc)
+
         self.assertTrue(
             SupportMethodProvider.are_lists_of_requirementdetails_equal(
-                list1 = self.requirement_summary.details,
-                list2 = self.details
-            ))
-    def test_requirementsummary_shouldreturnexpectedstring_wheninvoked(self) -> None:
-        
-		# Arrange
-        # Act
-        actual : str = str(self.requirement_summary)
-
-        # Assert
-        self.assertEqual(actual, self.expected) 
+                list1 = requirement_summary.details,
+                list2 = expected_details))
 class LocalPackageLoaderTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
