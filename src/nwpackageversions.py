@@ -357,7 +357,7 @@ class LambdaCollection():
         version_lst : list[str] = str(process.stdout).replace("Python", "").replace("\n", "").strip().split(".")
 
         if (len(version_lst) != 3):
-            raise Exception(_MessageCollection.python_version_unexpected_output)
+            raise Exception(_MessageCollection.python_version_unexpected_output())
         
         version_tpl : Tuple[int, int, int] = (int(version_lst[0]), int(version_lst[1]), int(version_lst[2]))
 

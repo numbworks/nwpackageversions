@@ -1,5 +1,6 @@
 # GLOBAL MODULES
 import os
+from subprocess import CompletedProcess
 import sys
 import unittest
 from datetime import datetime
@@ -66,37 +67,22 @@ class ObjectMother():
         )
 
         return requirement_detail_2
+    @staticmethod
+    def get_requirement_detail_2_as_json() -> str:
+
+        formatted : str = "{ 'description': 'The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12').' }"
+
+        return formatted
 
     @staticmethod
-    def get_details() -> list[RequirementDetail]:
+    def get_requirement_details() -> list[RequirementDetail]:
 
-        details : list[RequirementDetail] = [
+        requirement_details : list[RequirementDetail] = [
             ObjectMother.get_requirement_detail_1(), 
             ObjectMother.get_requirement_detail_2()
         ]
 
-        return details
-
-    @staticmethod
-    def get_lines() -> list[str]:
-
-        lines : list[str] = [
-            "total_packages: '2", 
-            "matching: '1'", 
-            "matching_prc: '50.00%'", 
-            "mismatching: '1'", 
-            "mismatching_prc: '50.00%'"
-        ]
-
-        return lines
-
-    @staticmethod
-    def get_expected() -> str:
-
-        expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
-
-        return expected
-
+        return requirement_details
     @staticmethod
     def get_requirement_summary() -> RequirementSummary:
 
@@ -106,10 +92,16 @@ class ObjectMother():
             matching_prc = "50.00%",
             mismatching = 1,
             mismatching_prc = "50.00%",
-            details = ObjectMother.get_details()
+            details = ObjectMother.get_requirement_details()
         )
 
         return requirement_summary
+    @staticmethod
+    def get_requirement_summary_as_json_without_details() -> str:
+
+        expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
+
+        return expected
 class SupportMethodProvider():
 
     '''Collection of generic purpose test-aiding methods.'''
@@ -548,6 +540,38 @@ class LambdaCollectionTestCase(unittest.TestCase):
 
         # Act, Assert
         do_nothing_function("test")
+    def test_runtimeversionfunction_shouldreturnexpectedtuple_wheninvoked(self):
+
+        # Arrange
+        expected : Tuple[int, int, int] = (3, 12, 5)
+        stdout : str = "Python 3.12.5\n"
+        process : MagicMock = MagicMock(spec = CompletedProcess)
+        process.stdout = stdout
+
+        # Act
+        actual : Optional[Tuple[int, int, int]] = None
+        with patch("subprocess.run", return_value = process) as run:
+            runtime_version_function : Callable[[], Tuple[int, int, int]] = LambdaCollection.runtime_version_function()
+            actual = runtime_version_function()
+
+        # Assert
+        run.assert_called_once_with(["python", "--version"], capture_output = True, text = True, check = True)
+        self.assertEqual(actual, expected)
+    def test_runtimeversionfunction_shouldraiseexception_whenoutputisunexpected(self):
+
+        # Arrange
+        stdout : str = "Invalid Output"
+        process : MagicMock = MagicMock(spec = CompletedProcess)
+        process.stdout = stdout
+
+        # Act, Assert
+        with patch("subprocess.run", return_value = process):
+            with self.assertRaises(Exception)as context:
+                LambdaCollection.runtime_version_function()
+
+            self.assertEqual(
+                _MessageCollection.python_version_unexpected_output(),
+                str(context.exception))
 class LSessionTestCase(unittest.TestCase):
 
     def setUp(self):
@@ -596,85 +620,6 @@ class LSessionTestCase(unittest.TestCase):
 
         # Assert
         self.assertEqual(actual, expected)
-class RequirementDetailTestCase(unittest.TestCase):
-
-    def setUp(self) -> None:
-
-        self.package_1 : Package = Package(name = "requests", version = "2.26.0")
-        self.release_1 : Release = Release(package_name = "requests", version = "2.26.0", date = datetime(2023, 10, 5))
-        self.is_version_matching_1 : bool = True
-        self.description_1 : str = "The current version matches the most recent release."
-
-        self.package_2 : Package = Package(name = "numpy", version = "1.26.3")
-        self.release_2 : Release = Release(package_name = "numpy", version = "2.1.2", date = datetime(2024, 10, 5))
-        self.is_version_matching_2 : bool = False
-        self.description_2 : str = (
-            "The current version ('1.26.3') of 'numpy' doesn't match with the most recent release "
-            "('2.1.2', '2024-10-05')."
-        )
-        self.expected_2 : str = "{ 'description': 'The current version ('1.26.3') of 'numpy' doesn't match with the most recent release ('2.1.2', '2024-10-05').' }"
-
-        self.requirement_detail_1 : RequirementDetail = RequirementDetail(
-            current_package = self.package_1,
-            most_recent_release = self.release_1,
-            is_version_matching = self.is_version_matching_1,
-            description = self.description_1
-        )
-        self.requirement_detail_2 : RequirementDetail = RequirementDetail(
-            current_package = self.package_2,
-            most_recent_release = self.release_2,
-            is_version_matching = self.is_version_matching_2,
-            description = self.description_2
-        )    
-
-    def test_requirementdetail_shouldinitializeasexpected_wheninvoked(self) -> None:
-	
-        # Arrange
-        # Act
-        # Assert
-        self.assertEqual(self.requirement_detail_1.current_package, self.package_1)
-        self.assertEqual(self.requirement_detail_1.most_recent_release, self.release_1)
-        self.assertTrue(self.requirement_detail_1.is_version_matching)
-        self.assertEqual(self.requirement_detail_1.description, self.description_1)
-    def test_requirementdetail_shouldreturnexpectedstring_wheninvoked(self) -> None:
-        
-		# Arrange
-        # Act
-        actual_str : str = str(self.requirement_detail_2)
-        actual_repr : str = self.requirement_detail_2.__repr__()
-
-        # Assert
-        self.assertEqual(actual_str, self.expected_2)
-        self.assertEqual(actual_repr, self.expected_2)
-class RequirementSummaryTestCase(unittest.TestCase):
-
-    def test_requirementsummary_shouldinitializeasexpected_wheninvoked(self) -> None:
-	
-        # Arrange
-        requirement_summary : RequirementSummary = ObjectMother.get_requirement_summary()
-
-        expected_total_packages : int = 2
-        expected_matching : int = 1
-        expected_matching_prc : str = "50.00%"
-        expected_mismatching : int = 1
-        expected_mismatching_prc : str = "50.00%"
-        expected_details : list[RequirementDetail] = [
-            ObjectMother.get_requirement_detail_1(),
-            ObjectMother.get_requirement_detail_2()
-        ] 
-
-        # Act
-        # Assert
-        self.assertEqual(expected_total_packages, requirement_summary.total_packages)
-        self.assertEqual(expected_matching, requirement_summary.matching)
-        self.assertEqual(expected_matching_prc, requirement_summary.matching_prc)
-        self.assertEqual(expected_mismatching, requirement_summary.mismatching)
-        self.assertEqual(expected_mismatching_prc, requirement_summary.mismatching_prc)
-
-        self.assertTrue(
-            SupportMethodProvider.are_lists_of_requirementdetails_equal(
-                list1 = requirement_summary.details,
-                list2 = expected_details))
 class LocalPackageLoaderTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
