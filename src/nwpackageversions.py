@@ -1053,27 +1053,7 @@ class RequirementChecker():
         )
 
         return requirement_summary
-
-    def get_default_devcointainer_dockerfile_path(self) -> str:
-        
-        '''
-            This assumes that:
-
-                - the *.py file from which the consumer is calling this method is stored into <root>/src;
-                - the Dockerfile is placed into <root>/.devcontainer folder instead.
-
-            Example:
-
-                os.path.join(os.path.abspath(os.curdir).replace("src", ".devcontainer"), "Dockerfile")
-        '''
-        
-        dockerfile_path : str = os.path.join(
-            os.path.abspath(os.curdir).replace("src", ".devcontainer"), 
-            "Dockerfile"
-        )
-
-        return dockerfile_path
-    
+   
     def get_summary(self, file_path : str, only_stable_releases : bool = DEFAULT.ONLY_STABLE_RELEASES, waiting_time : int = DEFAULT.WAITING_TIME) -> RequirementSummary:
 
         '''
