@@ -7,6 +7,7 @@ Alias: nwpver
 # GLOBAL MODULES
 import copy
 import os
+import platform
 import re
 import requests
 import subprocess
@@ -295,12 +296,19 @@ class LambdaCollection():
     def runtime_version_function() -> Callable[[], Tuple[int, int, int]]:
 
         '''
-            Runs "python --version" command.
+            Runs:
+                - "python --version" on Windows
+                - "python3 --version" on Linux
         
             Expected output: "Python 3.12.5" -> (3, 12, 5)
         '''
 
-        command : list[str] = ["python3", "--version"]
+        executable : str = "python3"
+        
+        if platform.system() == "Windows":
+            executable = "python"
+
+        command : list[str] = [executable, "--version"]
 
         process : CompletedProcess = subprocess.run(
             command,
