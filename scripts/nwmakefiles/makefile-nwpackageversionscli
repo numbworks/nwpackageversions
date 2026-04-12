@@ -1,6 +1,6 @@
 include makefile
 
-MODULE_NAME = "nwpackageversions"
+MODULE_NAME = "nwpackageversionscli"
 
 .PHONY: \
 	clear \

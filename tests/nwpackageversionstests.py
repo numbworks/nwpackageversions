@@ -12,8 +12,10 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, Badge, BasicFormatter, Formatter, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher, Validator
-from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession, JsonFormatter
+from nwpackageversions import _MessageCollection, Badge, BasicFormatter, Formatter, LSession, LambdaCollection
+from nwpackageversions import LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher, Validator
+from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary
+from nwpackageversions import XMLItem, Release, FSession, JsonFormatter
 
 # SUPPORT METHODS
 class ObjectMother():
