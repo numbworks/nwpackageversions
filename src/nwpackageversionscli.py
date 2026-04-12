@@ -6,15 +6,51 @@ Alias: nwpver
 
 # GLOBAL MODULES
 import os
-from argparse import ArgumentParser, Namespace
-from typing import Final, Optional, Tuple
+from argparse import _SubParsersAction, ArgumentParser, Namespace
+from typing import Any, Callable, Final, Optional, Tuple
 
 # LOCAL/NW MODULES
 from nwpackageversions import RequirementChecker, RuntimeChecker
-from setupinfo import CLI_NAME, CLI_DESCRIPTION
+from setupinfo import CLI_NAME, CLI_DESCRIPTION, PROJECT_VERSION
 
 # GENERIC CLASSES
 # CONSTANTS
+class CLISTRING:
+
+    '''Collects all the CLI-related strings.'''
+
+    COMMAND_DEST : Final[str] = "command"
+    COMMAND_REQUIRED : Final[bool] = True
+    COMMAND_ARGS : dict[str, Any] = { "dest": COMMAND_DEST, "required": COMMAND_REQUIRED }
+
+    COMMAND_RUNTIME_NAME : Final[str] = "runtime"
+    COMMAND_RUNTIME_HELP : Final[str] = "Checks the status of the Python runtime."
+
+    COMMAND_REQUIREMENTS_NAME : Final[str] = "requirements"
+    COMMAND_REQUIREMENTS_HELP : Final[str] = "Checks the status of the required packages."
+
+    OPTION_REQUIRED_FLAGS : Final[list[str]] = ["--required"]
+    OPTION_REQUIRED_DEST : Final[str] = "required"
+    OPTION_REQUIRED_REQUIRED : Final[bool] = True
+    OPTION_REQUIRED_HELP : Final[str] = "The required Python version (e.g., 3.12.5)."
+
+    OPTION_FILEPATH_FLAGS : Final[list[str]] = ["--file_path"]
+    OPTION_FILEPATH_DEST : Final[str] = "file_path"
+    OPTION_FILEPATH_REQUIRED : Final[bool] = True
+    OPTION_FILEPATH_HELP : Final[str] = "The path to the file containing package requirements."
+
+    OPTION_ONLYSTABLERELEASES_FLAGS : Final[list[str]] = ["--only_stable_releases"]
+    OPTION_ONLYSTABLERELEASES_DEST : Final[str] = "only_stable_releases"
+    OPTION_ONLYSTABLERELEASES_REQUIRED : Final[bool] = False
+    OPTION_ONLYSTABLERELEASES_DEFAULT : Final[bool] = True
+    OPTION_ONLYSTABLERELEASES_HELP : Final[str] = "Whether to consider only stable releases or not."
+
+    OPTION_WAITINGTIME_FLAGS : Final[list[str]] = ["--waiting_time"]
+    OPTION_WAITINGTIME_DEST : Final[str] = "waiting_time"
+    OPTION_WAITINGTIME_TYPE : type = int
+    OPTION_WAITINGTIME_DEFAULT : Final[int] = 30
+    OPTION_WAITINGTIME_HELP : Final[str] = "The waiting time between requests (in seconds)."
+
 # STATIC CLASSES
 class _MessageCollectionAsciiBannerManager():
 
@@ -94,9 +130,120 @@ class AsciiBannerManager:
         ])
 
         return ascii_banner
+class APFactory():
+
+    '''Encapsulates all the logic related to the creation of a custom instance of argparse.ArgumentParser.'''
+
+    def create(self) -> ArgumentParser:
+
+        '''Creates a custom instance of argparse.ArgumentParser.'''
+
+        argument_parser : ArgumentParser = ArgumentParser(prog = CLI_NAME, description = CLI_DESCRIPTION)
+        root : _SubParsersAction = argument_parser.add_subparsers(**CLISTRING.COMMAND_ARGS)
+
+        runtime_parser : ArgumentParser = root.add_parser(
+            name = CLISTRING.COMMAND_RUNTIME_NAME, 
+            help = CLISTRING.COMMAND_RUNTIME_HELP)
+        
+        runtime_parser.add_argument(
+            *CLISTRING.OPTION_REQUIRED_FLAGS,
+            dest = CLISTRING.OPTION_REQUIRED_DEST,
+            required = CLISTRING.OPTION_REQUIRED_REQUIRED,
+            help = CLISTRING.OPTION_REQUIRED_HELP)
+
+        requirements_parser : ArgumentParser = root.add_parser(
+            name = CLISTRING.COMMAND_REQUIREMENTS_NAME, 
+            help = CLISTRING.COMMAND_REQUIREMENTS_HELP)
+
+        requirements_parser.add_argument(
+            *CLISTRING.OPTION_FILEPATH_FLAGS,
+            dest = CLISTRING.OPTION_FILEPATH_DEST,
+            required = CLISTRING.OPTION_FILEPATH_REQUIRED,
+            help = CLISTRING.OPTION_FILEPATH_HELP)
+
+        requirements_parser.add_argument(
+            *CLISTRING.OPTION_ONLYSTABLERELEASES_FLAGS,
+            dest = CLISTRING.OPTION_ONLYSTABLERELEASES_DEST,
+            default = CLISTRING.OPTION_ONLYSTABLERELEASES_DEFAULT,
+            help = CLISTRING.OPTION_ONLYSTABLERELEASES_HELP)
+
+        requirements_parser.add_argument(
+            *CLISTRING.OPTION_WAITINGTIME_FLAGS,
+            dest = CLISTRING.OPTION_WAITINGTIME_DEST,
+            type = CLISTRING.OPTION_WAITINGTIME_TYPE,
+            default = CLISTRING.OPTION_WAITINGTIME_DEFAULT,
+            help = CLISTRING.OPTION_WAITINGTIME_HELP)
+
+        return argument_parser
+class APAdapter():
+
+    '''Customizes argparse.ArgumentParser for this use case.'''
+
+    __ap_factory : APFactory
+
+    def __init__(self, ap_factory : APFactory = APFactory()) -> None:
+        self.__ap_factory = ap_factory
+
+    def parse_args(self) -> Namespace:
+
+        '''Parses provided arguments.'''
+
+        parser : ArgumentParser = self.__ap_factory.create()
+        return parser.parse_args()
+class CLIManager():
+
+    '''Collects all the logic related to the CLI management.'''
+
+    __ap_adapter : APAdapter
+    __ascii_banner_manager : AsciiBannerManager
+    __runtime_checker : RuntimeChecker
+    __requirement_checker : RequirementChecker
+    __logging_function : Callable[[str], None]
+
+    def __init__(
+        self, 
+        ap_adapter : APAdapter = APAdapter(), 
+        ascii_banner_manager : AsciiBannerManager = AsciiBannerManager(),
+        runtime_checker : RuntimeChecker = RuntimeChecker(),
+        requirement_checker : RequirementChecker = RequirementChecker(),
+        logging_function : Callable[[str], None] = lambda msg : print(msg)) -> None:
+        
+        self.__ap_adapter = ap_adapter
+        self.__ascii_banner_manager = ascii_banner_manager
+        self.__runtime_checker = runtime_checker
+        self.__requirement_checker = requirement_checker
+        self.__logging_function = logging_function
+
+    def __log_ascii_banner(self) -> None:
+
+        '''Logs the ascii banner.'''
+
+        self.__logging_function("")
+        self.__logging_function(self.__ascii_banner_manager.create(PROJECT_VERSION))
+
+    def parse(self) -> None:
+
+        '''Parses arguments and dispatches the logic to the appropriate checker.'''
+
+        try:
+
+            self.__log_ascii_banner()
+            args : Namespace = self.__ap_adapter.parse_args()
+
+            if args.command == CLISTRING.COMMAND_RUNTIME_NAME:
+                self.__runtime_checker.try_get_status(required = args.required)
+            
+            elif args.command == CLISTRING.COMMAND_REQUIREMENTS_NAME:
+                self.__requirement_checker.try_get_status(
+                    file_path = args.file_path,
+                    only_stable_releases = args.only_stable_releases,
+                    waiting_time = args.waiting_time)
+            
+        except Exception as e:
+            self.__logging_function(str(e))
 
 # MAIN
-def main(): pass # CLIManager().run_and_log()
+def main(): CLIManager().parse()
 
 if __name__ == "__main__":
     main()
