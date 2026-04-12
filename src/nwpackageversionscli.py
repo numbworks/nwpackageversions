@@ -136,9 +136,16 @@ class APFactory():
 
     def create(self) -> ArgumentParser:
 
-        '''Creates a custom instance of argparse.ArgumentParser.'''
+        '''
+            Creates a custom instance of argparse.ArgumentParser.
 
-        argument_parser : ArgumentParser = ArgumentParser(prog = CLI_NAME, description = CLI_DESCRIPTION)
+            The "prog" argument is not provided in order to make the "usage" statement  dynamic:
+
+                usage: nwpackageversionscli [-h] {runtime,requirements} ...
+                usage: nwpver [-h] {runtime,requirements} ...
+        '''
+
+        argument_parser : ArgumentParser = ArgumentParser(description = CLI_DESCRIPTION)
         root : _SubParsersAction = argument_parser.add_subparsers(**CLISTRING.COMMAND_ARGS)
 
         runtime_parser : ArgumentParser = root.add_parser(
