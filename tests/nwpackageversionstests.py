@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, Badge, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher
+from nwpackageversions import _MessageCollection, Badge, BasicFormatter, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher
 from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession, JsonFormatter
 
 # SUPPORT METHODS
@@ -725,6 +725,69 @@ class JsonFormatterTestCase(unittest.TestCase):
 
         # Act
         actual : str = JsonFormatter().format_requirement_summary(requirement_summary, with_details = True)
+
+        # Assert
+        self.assertEqual(actual, expected)
+class BasicFormatterTestCase(unittest.TestCase):
+
+    def test_formatrequirementdetail_shouldreturnexpectedstring_wheninvoked(self):
+
+        # Arrange
+        requirement_detail : RequirementDetail = ObjectMother.get_requirement_detail_2()
+        expected : str = requirement_detail.description
+
+        # Act
+        actual : str = BasicFormatter().format_requirement_detail(requirement_detail)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_formatrequirementdetails_shouldreturnexpectedstring_wheninvoked(self):
+
+        # Arrange
+        requirement_details : list[RequirementDetail] = ObjectMother.get_requirement_details()
+        expected : str = str.join("\n", [detail.description for detail in requirement_details])
+
+        # Act
+        actual : str = BasicFormatter().format_requirement_details(requirement_details)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_formatrequirementsummary_shouldreturnexpectedstring_whenwithdetailsisfalse(self):
+
+        # Arrange
+        requirement_summary : RequirementSummary = ObjectMother.get_requirement_summary()
+        expected_lines : list[str] = [
+            f"total_packages: '{str(requirement_summary.total_packages)}'",
+            f"matching: '{str(requirement_summary.matching)}'",
+            f"matching_prc: '{requirement_summary.matching_prc}'",
+            f"mismatching: '{str(requirement_summary.mismatching)}'",
+            f"mismatching_prc: '{requirement_summary.mismatching_prc}'"
+        ]
+        expected : str = str.join("\n", expected_lines)
+
+        # Act
+        actual : str = BasicFormatter().format_requirement_summary(requirement_summary, with_details = False)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_formatrequirementsummary_shouldreturnexpectedstring_whenwithdetailsistrue(self):
+
+        # Arrange
+        requirement_summary : RequirementSummary = ObjectMother.get_requirement_summary()
+        formatter : BasicFormatter = BasicFormatter()
+        
+        summary_lines : list[str] = [
+            f"total_packages: '{str(requirement_summary.total_packages)}'",
+            f"matching: '{str(requirement_summary.matching)}'",
+            f"matching_prc: '{requirement_summary.matching_prc}'",
+            f"mismatching: '{str(requirement_summary.mismatching)}'",
+            f"mismatching_prc: '{requirement_summary.mismatching_prc}'"
+        ]
+        details : str = formatter.format_requirement_details(requirement_summary.details)
+        expected : str = str.join("\n", [str.join("\n", summary_lines), "", details])
+
+        # Act
+        actual : str = formatter.format_requirement_summary(requirement_summary, with_details = True)
 
         # Assert
         self.assertEqual(actual, expected)
