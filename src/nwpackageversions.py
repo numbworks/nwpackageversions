@@ -305,13 +305,6 @@ class LambdaCollection():
             content = file.read()
 
         return content
-    @staticmethod
-    def __log_list(logging_function : Callable[[str], None], lst : list[Any]) -> None: 
-
-        '''Adds a newline between each item of the provided lst before logging them.'''
-
-        for item in lst:
-            logging_function(str(item))
 
     @staticmethod
     def get_function() -> Callable[[str], Response]:
@@ -325,13 +318,6 @@ class LambdaCollection():
         '''An adapter around print().'''
 
         return lambda msg : print(msg)
-    @staticmethod
-    def list_logging_function() -> Callable[[Callable[[str], None], list[Any]], None]:
-
-        '''
-            An adapter around print() that adds a newline between each item of the provided lst before priting them.'''
-
-        return lambda lf, lst : LambdaCollection.__log_list(lf, lst)
     @staticmethod
     def file_reader_function() -> Callable[[str], str]:
 
@@ -350,7 +336,6 @@ class LambdaCollection():
         '''Does nothing.'''
 
         return lambda x : None
-
     @staticmethod
     def runtime_version_function() -> Callable[[], Tuple[int, int, int]]:
 

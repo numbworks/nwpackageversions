@@ -12,7 +12,7 @@ from re import Match
 from typing import Any, Callable, Final, Optional, Tuple
 
 # LOCAL/NW MODULES
-from nwpackageversions import RequirementChecker, RuntimeChecker, DEFAULT
+from nwpackageversions import RequirementChecker, RuntimeChecker, LambdaCollection, DEFAULT
 from setupinfo import CLI_DESCRIPTION, PROJECT_VERSION
 
 # GENERIC CLASSES
@@ -232,7 +232,7 @@ class CLIManager():
         ascii_banner_manager : AsciiBannerManager = AsciiBannerManager(),
         runtime_checker : RuntimeChecker = RuntimeChecker(),
         requirement_checker : RequirementChecker = RequirementChecker(),
-        logging_function : Callable[[str], None] = lambda msg : print(msg)) -> None:
+        logging_function : Callable[[str], None] = LambdaCollection.logging_function()) -> None:
         
         self.__ap_factory = ap_factory
         self.__ascii_banner_manager = ascii_banner_manager

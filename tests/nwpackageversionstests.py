@@ -446,19 +446,6 @@ class LambdaCollectionTestCase(unittest.TestCase):
         # Assert
         elapsed_time : float = end_time - start_time
         self.assertAlmostEqual(elapsed_time, waiting_time, delta=0.1)
-    def test_listloggingfunction_shouldlogitemsasexpected_whenlistisprovided(self) -> None:
-        
-        # Arrange
-        lst : list[Any] = [1, 2, 3]
-        messages : list[str] = []
-        logging_function_mock : Callable[[str], None] = lambda msg : messages.append(msg)
-
-        # Act, 
-        list_logging_function : Callable[[Callable[[str], None], list[Any]], None] = LambdaCollection.list_logging_function()
-        list_logging_function(logging_function_mock, lst)
-        
-        # Assert
-        self.assertEqual(messages, ["1", "2", "3"])
     def test_donothingfunction_shoulddonothing_wheninvoked(self) -> None:
         
         # Arrange
