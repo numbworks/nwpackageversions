@@ -43,6 +43,13 @@ class ObjectMother():
         )
 
         return requirement_detail_1
+    @staticmethod
+    def get_requirement_detail_1_as_json() -> str:
+
+        description : str = ObjectMother().get_requirement_detail_1().description
+        formatted : str = f"{{ 'description': '{description}' }}"
+
+        return formatted
 
     @staticmethod
     def get_package_2() -> Package:
@@ -70,7 +77,8 @@ class ObjectMother():
     @staticmethod
     def get_requirement_detail_2_as_json() -> str:
 
-        formatted : str = "{ 'description': 'The current version ('4.5.0') of 'opencv-python' doesn't match with the most recent release ('4.10.0', '2023-08-12').' }"
+        description : str = ObjectMother().get_requirement_detail_2().description
+        formatted : str = f"{{ 'description': '{description}' }}"
 
         return formatted
 
@@ -83,6 +91,16 @@ class ObjectMother():
         ]
 
         return requirement_details
+    @staticmethod
+    def get_requirement_details_as_json() -> str:
+
+        formatted : str = str.join("\n", [
+			ObjectMother.get_requirement_detail_1_as_json(),
+			ObjectMother.get_requirement_detail_2_as_json()
+		])
+
+        return formatted  
+
     @staticmethod
     def get_requirement_summary() -> RequirementSummary:
 
@@ -99,9 +117,17 @@ class ObjectMother():
     @staticmethod
     def get_requirement_summary_as_json_without_details() -> str:
 
-        expected : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
+        formatted : str = "{ 'total_packages': '2', 'matching': '1', 'matching_prc': '50.00%', 'mismatching': '1', 'mismatching_prc': '50.00%' }"
 
-        return expected
+        return formatted
+    @staticmethod
+    def get_requirement_summary_as_json_with_details() -> str:
+
+        formatted_summary : str = ObjectMother.get_requirement_summary_as_json_without_details()
+        formatted_details : str = ObjectMother.get_requirement_details_as_json()
+        formatted : str = str.join("\n", [formatted_summary, formatted_details])
+
+        return formatted
 class SupportMethodProvider():
 
     '''Collection of generic purpose test-aiding methods.'''
@@ -656,7 +682,52 @@ class LambdaCollectionTestCase(unittest.TestCase):
             self.assertEqual(
                 _MessageCollection.python_version_unexpected_output(),
                 str(context.exception))
+class JsonFormatterTestCase(unittest.TestCase):
 
+    def test_formatrequirementdetail_shouldreturnexpectedstring_wheninvoked(self):
+
+        # Arrange
+        requirement_detail : RequirementDetail = ObjectMother.get_requirement_detail_2()
+        expected : str = ObjectMother.get_requirement_detail_2_as_json()
+
+        # Act
+        actual : str = JsonFormatter().format_requirement_detail(requirement_detail)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_formatrequirementdetails_shouldreturnexpectedstring_wheninvoked(self):
+
+        # Arrange
+        requirement_details : list[RequirementDetail] = ObjectMother.get_requirement_details()
+        expected : str = ObjectMother.get_requirement_details_as_json()
+
+        # Act
+        actual : str = JsonFormatter().format_requirement_details(requirement_details)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_formatrequirementsummary_shouldreturnexpectedstring_whenwithdetailsisfalse(self):
+
+        # Arrange
+        requirement_summary : RequirementSummary = ObjectMother.get_requirement_summary()
+        expected : str = ObjectMother.get_requirement_summary_as_json_without_details()
+
+        # Act
+        actual : str = JsonFormatter().format_requirement_summary(requirement_summary, with_details = False)
+
+        # Assert
+        self.assertEqual(actual, expected)
+    def test_formatrequirementsummary_shouldreturnexpectedstring_whenwithdetailsistrue(self):
+
+        # Arrange
+        requirement_summary : RequirementSummary = ObjectMother.get_requirement_summary()
+        expected : str = ObjectMother.get_requirement_summary_as_json_with_details()
+
+        # Act
+        actual : str = JsonFormatter().format_requirement_summary(requirement_summary, with_details = True)
+
+        # Assert
+        self.assertEqual(actual, expected)
 class LocalPackageLoaderTestCase(unittest.TestCase):
 
     def setUp(self) -> None:
