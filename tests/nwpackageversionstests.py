@@ -667,7 +667,7 @@ class LambdaCollectionTestCase(unittest.TestCase):
             actual = runtime_version_function()
 
         # Assert
-        run.assert_called_once_with(["python", "--version"], capture_output = True, text = True, check = True)
+        run.assert_called_once_with(["python3", "--version"], capture_output = True, text = True, check = True)
         self.assertEqual(actual, expected)
     def test_runtimeversionfunction_shouldraiseexception_whenoutputisunexpected(self):
 

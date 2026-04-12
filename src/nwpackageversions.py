@@ -169,7 +169,7 @@ class _MessageCollectionLambdaCollection():
 
     @staticmethod
     def python_version_unexpected_output() -> str:
-        return "The 'python --version' command returned an unexpected output."
+        return "The 'python3 --version' command returned an unexpected output."
 class _MessageCollectionValidator():
 
     '''Collects all the messages used for logging and for the exceptions used by Validator.'''
@@ -300,7 +300,7 @@ class LambdaCollection():
             Expected output: "Python 3.12.5" -> (3, 12, 5)
         '''
 
-        command : list[str] = ["python", "--version"]
+        command : list[str] = ["python3", "--version"]
 
         process : CompletedProcess = subprocess.run(
             command,
@@ -940,9 +940,12 @@ class RuntimeChecker():
 
     __runtime_version_function : Callable[[], Tuple[int, int, int]]
 
-    def __init__(self, runtime_version_function : Callable[[], Tuple[int, int, int]] = LambdaCollection.runtime_version_function()) -> None:
+    def __init__(self, runtime_version_function : Optional[Callable[[], Tuple[int, int, int]]] = None) -> None:
 
-        self.__runtime_version_function = runtime_version_function
+        if runtime_version_function is None:
+            self.__runtime_version_function = LambdaCollection.runtime_version_function()
+        else:
+            self.__runtime_version_function = runtime_version_function
 
     def get_status(self, required : Tuple[int, int, int]) -> str:
 
