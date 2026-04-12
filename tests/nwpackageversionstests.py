@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch, mock_open, MagicMock
 
 # LOCAL MODULES
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
-from nwpackageversions import _MessageCollection, Badge, BasicFormatter, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher
+from nwpackageversions import _MessageCollection, Badge, BasicFormatter, LSession, LambdaCollection, LocalPackageLoader, Package, RuntimeChecker, PyPiBadgeFetcher, Validator
 from nwpackageversions import PyPiReleaseFetcher, RequirementChecker, RequirementDetail, RequirementSummary, XMLItem, Release, FSession, JsonFormatter
 
 # SUPPORT METHODS
@@ -682,6 +682,48 @@ class LambdaCollectionTestCase(unittest.TestCase):
             self.assertEqual(
                 _MessageCollection.python_version_unexpected_output(),
                 str(context.exception))
+class ValidatorTestCase(unittest.TestCase):
+
+    def test_validatewaitingtime_shouldraiseexceptionwithexpectedmessage_whenwaitingtimelessthanminimum(self):
+
+        # Arrange
+        waiting_time : int = 2
+        minimum_wt : int = 5
+        expected : str = _MessageCollection.waiting_time_cant_be_less_than(waiting_time, minimum_wt)
+
+        # Act, Assert
+        with self.assertRaises(Exception) as context:
+            Validator.validate_waiting_time(waiting_time = waiting_time)
+        
+        self.assertEqual(str(context.exception), expected)
+    def test_validatewaitingtime_shoulddonothing_whenwaitingtimeisgreaterthanorequaltominimum(self):
+
+        # Arrange
+        waiting_time : int = 5
+
+        # Act, Assert
+        Validator.validate_waiting_time(waiting_time = waiting_time)
+
+    def test_validatefilepath_shouldraiseexceptionwithexpectedmessage_whenfiledoesnotexist(self):
+
+        # Arrange
+        file_path : str = r"C:/NonExistentFile.txt"
+        expected : str = _MessageCollection.provided_file_path_doesnt_exist(file_path)
+
+        # Act, Assert
+        with patch("os.path.isfile", return_value = False):
+            with self.assertRaises(Exception) as context:
+                Validator.validate_file_path(file_path = file_path)
+            
+            self.assertEqual(str(context.exception), expected)
+    def test_validatefilepath_shoulddonothing_whenfileexists(self):
+
+        # Arrange
+        file_path : str = r"C:/Exists.txt"
+
+        # Act, Assert
+        with patch("os.path.isfile", return_value = True):
+            Validator.validate_file_path(file_path = file_path)
 class JsonFormatterTestCase(unittest.TestCase):
 
     def test_formatrequirementdetail_shouldreturnexpectedstring_wheninvoked(self):
