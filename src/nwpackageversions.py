@@ -19,11 +19,18 @@ from re import Match, Pattern
 from requests import Response
 from subprocess import CompletedProcess
 from time import sleep
-from typing import Any, Callable, Literal, Optional, Tuple, cast
+from typing import Any, Callable, Final, Literal, Optional, Tuple, cast
 from xml.etree.ElementTree import Element
 
 # LOCAL MODULES
 # CONSTANTS
+class DEFAULT:
+
+    '''Collects all the defaults.'''
+
+    ONLY_STABLE_RELEASES : Final[bool] = True
+    WAITING_TIME : Final[int] = 10
+    
 # DTOs
 @dataclass(frozen = True)
 class Package():
@@ -1066,7 +1073,8 @@ class RequirementChecker():
         )
 
         return dockerfile_path
-    def get_summary(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> RequirementSummary:
+    
+    def get_summary(self, file_path : str, only_stable_releases : bool = DEFAULT.ONLY_STABLE_RELEASES, waiting_time : int = DEFAULT.WAITING_TIME) -> RequirementSummary:
 
         '''
             This method:
@@ -1092,8 +1100,7 @@ class RequirementChecker():
         requirement_summary : RequirementSummary = self.__create_requirement_summary(requirement_details = requirement_details)
 
         return requirement_summary
-    
-    def get_status(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> str:
+    def get_status(self, file_path : str, only_stable_releases : bool = DEFAULT.ONLY_STABLE_RELEASES, waiting_time : int = DEFAULT.WAITING_TIME) -> str:
 
         '''
             This method:
@@ -1114,7 +1121,7 @@ class RequirementChecker():
         status : str = self.__formatter.format_requirement_summary(requirement_summary)
 
         return status
-    def try_get_status(self, file_path : str, only_stable_releases : bool = False, waiting_time : int = 5) -> str:
+    def try_get_status(self, file_path : str, only_stable_releases : bool = DEFAULT.ONLY_STABLE_RELEASES, waiting_time : int = DEFAULT.WAITING_TIME) -> str:
 
         '''
             It performs the same operations as get_status().

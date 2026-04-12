@@ -12,8 +12,8 @@ from re import Match
 from typing import Any, Callable, Final, Optional, Tuple
 
 # LOCAL/NW MODULES
-from nwpackageversions import RequirementChecker, RuntimeChecker
-from setupinfo import CLI_NAME, CLI_DESCRIPTION, PROJECT_VERSION
+from nwpackageversions import RequirementChecker, RuntimeChecker, DEFAULT
+from setupinfo import CLI_DESCRIPTION, PROJECT_VERSION
 
 # GENERIC CLASSES
 # CONSTANTS
@@ -44,13 +44,13 @@ class CLISTRING:
     OPTION_ONLYSTABLERELEASES_FLAGS : Final[list[str]] = ["--only_stable_releases"]
     OPTION_ONLYSTABLERELEASES_DEST : Final[str] = "only_stable_releases"
     OPTION_ONLYSTABLERELEASES_REQUIRED : Final[bool] = False
-    OPTION_ONLYSTABLERELEASES_DEFAULT : Final[bool] = True
+    OPTION_ONLYSTABLERELEASES_DEFAULT : Final[bool] = DEFAULT.ONLY_STABLE_RELEASES
     OPTION_ONLYSTABLERELEASES_HELP : Final[str] = "Whether to consider only stable releases or not."
 
     OPTION_WAITINGTIME_FLAGS : Final[list[str]] = ["--waiting_time"]
     OPTION_WAITINGTIME_DEST : Final[str] = "waiting_time"
     OPTION_WAITINGTIME_TYPE : type = int
-    OPTION_WAITINGTIME_DEFAULT : Final[int] = 30
+    OPTION_WAITINGTIME_DEFAULT : Final[int] = DEFAULT.WAITING_TIME
     OPTION_WAITINGTIME_HELP : Final[str] = "The waiting time between requests (in seconds)."
 
 # STATIC CLASSES
@@ -288,8 +288,6 @@ class CLIManager():
 
             if not isinstance(e, SystemExit):
                 self.__logging_function(str(e))
-
-
 
 # MAIN
 def main(): CLIManager().parse()
