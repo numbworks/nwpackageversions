@@ -72,17 +72,17 @@ To learn more about some known issues that might have required a workaround to m
 
 - [docs-knownissues-python.md](SeeAlso-knownissues/docs-knownissues-python.md)
 
-## See Also: `nwmakefiles`
-
-This project includes portions of the `nwmakefiles` project, which is documented here:
-
-- [docs-nwmakefiles.md](SeeAlso-nwmakefiles/docs-nwmakefiles.md)
-
 ## See Also: `nwbuilders`
 
 This project includes portions of the `nwbuilders` project, which is documented here:
 
 - [docs-nwbuilders-python.md](SeeAlso-nwbuilders/docs-nwbuilders-python.md)
+
+## See Also: `nwmakefiles`
+
+This project includes portions of the `nwmakefiles` project, which is documented here:
+
+- [docs-nwmakefiles.md](SeeAlso-nwmakefiles/docs-nwmakefiles.md)
 
 ## Legal Information
 

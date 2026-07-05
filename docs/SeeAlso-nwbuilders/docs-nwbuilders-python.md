@@ -6,7 +6,7 @@ Contact: numbworks@gmail.com
 | Date | Author | Description |
 |---|---|---|
 | 2026-01-02 | numbworks | Created. |
-| 2026-03-31 | numbworks | Last update. |
+| 2026-04-06 | numbworks | Last update. |
 
 ## Introduction
 
@@ -25,7 +25,7 @@ In theory, it's possible to emulate ARM64 on AMD64 by using `nuitka` with QEMU, 
 
 For the Windows AMD64 builds, two options were evaluated for the corresponding build agents:
 
-1. Using a Windows Server–based container. This option was discarded due to its non‑free licensing requirements and its very limited community adoption compared to Linux-based alternatives.
+1. Using a Windows Server-based container. This option was discarded due to its non-free licensing requirements and its very limited community adoption compared to Linux-based alternatives.
 2. Using a Windows-based virtual (or physical) machine. This option was discarded because it requires several manual configuration steps and additional per‑project setup.
 
 Considering the two discarded options above, I choose to still use a Linux container as build agent for Windows build, pairing `pyinstaller` with Wine (Windows "emulation" layer). Unfortunately, `nuitka` is unable to build 64-bit executables under Wine (only 32-bit), therefore `pyinstaller` has been adopted. 
@@ -38,7 +38,7 @@ Here the content of the `nwbuilder-<cli_name>-linux` configuration (folder):
 
 ```
 ...
-nwbuilder-<cli_name>-linux`/
+nwbuilder-<cli_name>-linux/
 ├── <project_alias>.md
 ├── ...
 ├── ...
@@ -53,7 +53,7 @@ Here the content of the `nwbuilder-<cli_name>-win` configuration (folder):
 
 ```
 ...
-nwbuilder-<cli_name>-linux`/
+nwbuilder-<cli_name>-linux/
 ├── ...
 ├── ...
 ├── <cli_name>.py
@@ -115,7 +115,7 @@ To launch a `nwbuilders` configuration:
 In the majority of the cases, `nwbuilder-<cli_name>-linux` produces the following artifacts:
 
 1. A ZIP file containing only the executable file
-2. A DEB package that, once installed, will provide the executable file, the menu item with the icon and a man page
+2. A DEB package that, once installed, will provide the executable file, the menu item with the icon and a `man` page
 
 In the majority of the cases, `nwbuilder-<cli_name>-win` produces the following artifact:
 
@@ -132,6 +132,7 @@ In some edge cases, the resulting artifact consists of multiple files rather tha
 - `RUN --mount=type=cache,target=/root/.ccache` stores data in the "Build Cache" rather than the image layers themselves. It exists only during the build phase. Once the image is finished, the contents of that cache are not part of the final image.
 - The `--output-dir="/output"` flag is required because `nuitka` fails to compile if the output directory is the same as the directory in which the final executable will be saved.
 - The `--include-module` flag is required because `nuitka` does not automatically follow imports of other modules, not even if placed in the same folder. If the flag is not specified, `nuitka` will successfully compile the provided module anyway, but once launched, a `ModuleNotFoundError: No module named '...'` error message will be thrown.
+- The `--include-package=charset_normalizer` flag is required because `nuitka` does not automatically import `charset-normalizer`, a dependency for `requests`. If you omit this flag, the following error message will be returned: "_RequestsDependencyWarning: Unable to find acceptable character detection dependency (chardet or charset_normalizer)._".
 
 ## Notes About `nwbuilder-<cli_name>-win`
 
@@ -145,9 +146,56 @@ In some edge cases, the resulting artifact consists of multiple files rather tha
 - `WINEPREFIX=/opt/wine64` forces Wine to use this prefix location instead of `/root/.wine`.`WINEARCH=win64` tells Wine to make this environment a 64-bit Windows setup.
 - `ucrtbase.dll` is required by PyInstaller on Wine Wbecause modern Python for Windows requires the Microsoft Universal C Runtime (UCRT), and Wine often ships with an incomplete or outdated implementation of that DLL. When PyInstaller tries to analyze or bundle Python extensions, it ends up loading Windows binaries that depend on the real UCRT and Wine's stub just isn’t good enough.
 
+## Notes About `<cli_name>.sh`
+
+- The `<cli_name>.sh` script runs `docker build` with the `--progress=plain` flag, so that the whole log is shown and not swallowed. This flag makes eventual debug sessions easier.
+
 ## Notes About The Debian Packages
 
 - `Exec=/bin/bash -c '/usr/bin/${PROJECT_ALIAS}; exec bash'` will launch the installed CLI application without closing the terminal window afterwards. Bash's full-path is used to increase compatibility.
+
+## Notes About The `man` Pages
+
+Let's say that the source file for the `man` page is called `nwxxx.md`.
+
+To build and preview the `man` page:
+
+```bash
+go-md2man -in nwxxx.md -out nwxxx.1
+man ./nwxxx.1
+```
+
+The preview doesn't show the man page with 100% accuracy, therefore you need to install the `deb` package and run `man nwxxx`. Please know that you can't use the devcontainer for this, but you require a real Linux machine. 
+
+If you try, you'll get the following error messages:
+
+```bash
+$ man nwxxx
+No manual entry for nwxxx
+
+$ ls -l /usr/share/man/man1/nwxxx.1.gz
+ls: cannot access '/usr/share/man/man1/nwxxx.1.gz': No such file or directory 
+```
+
+The reason is that the devcontainer is a slimmed-down Linux environment and it has a "No Documentation" policy active. This means that a system-level filter is intercepting the installation and deleting documentation to save disk space. 
+
+You can verify it by typing the following command:
+
+```bash
+$ nano /etc/dpkg/dpkg.cfg.d/docker
+```
+
+```
+...
+path-exclude /usr/share/man/*
+....
+```
+
+## Notes about Chromium and `onefile` bundling
+
+As a rule of thumb, if your Python app relies on Chromium, bundling it as `onefile` is not a viable path. Chromium isn't just a single-file dependency, but it’s a massive ecosystem of specialized libraries, sandboxing processes and resource folders. When you force that into a onefile wrapper, you are essentially asking a temporary, compressed environment to manage a high-performance engine. 
+
+When Chromium is necessary, a `standalone` bundling strategy is the correct one to adopt.
 
 ## Notes About Maintenance On Host Machines
 
