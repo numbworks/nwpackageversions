@@ -5,7 +5,9 @@
 	"runArgs": ["--name", "nwpackageversions-main"],
 	"containerEnv": {
 		"TZ": "Europe/Stockholm",
-		"DEVCONTAINER_NAME": "main"
+		"DEVCONTAINER_NAME": "main",
+		"PYTHONPYCACHEPREFIX": "/home/vscode/.cache/pycache",
+		"MYPY_CACHE_DIR": "/home/vscode/.cache/mypy_cache"
 	},
 	"customizations": {
 		"vscode": {
@@ -17,5 +19,7 @@
 			]
 		}
 	},
-	"mounts": []
+	"mounts": [
+		"source=nwpackageversions-cache,target=/home/vscode/.cache,type=volume"
+	]
 }

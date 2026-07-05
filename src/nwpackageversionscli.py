@@ -7,8 +7,11 @@ Alias: nwpver
 # GLOBAL MODULES
 import os
 import re
+import subprocess
 from argparse import _SubParsersAction, ArgumentParser, ArgumentTypeError, Namespace
 from re import Match
+from shutil import get_terminal_size
+from subprocess import CompletedProcess
 from typing import Any, Callable, Final, Optional, Tuple
 
 # LOCAL/NW MODULES
@@ -123,9 +126,9 @@ class AsciiBannerManager:
 
         return (top_line, bottom_line)
 
-    def create(self, version: str) -> str:
+    def create_standard(self, version : str) -> str:
         
-        """Creates the formatted ASCII banner with a versioned frame."""
+        """Creates the standard ASCII banner."""
         
         self.__validate(version)
 
@@ -140,6 +143,115 @@ class AsciiBannerManager:
         ])
 
         return ascii_banner
+    def create_mini(self, version : str) -> str:
+
+        """
+            Creates the mini ASCII banner:
+            
+                *****************
+                * NWPVER v1.0.0 *
+                *****************
+        """
+
+        self.__validate(version)
+
+        assembly_name : str = "NWPVER"
+        middle_line : str = f"* {assembly_name} v{version} *"
+        
+        top_line : str = "*" * len(middle_line)
+        bottom_line : str = top_line
+
+        ascii_banner : str = os.linesep.join([
+            top_line,
+            middle_line,
+            bottom_line,
+            ""
+        ])
+
+        return ascii_banner
+    def create(self, version : str, terminal_width : int) -> str:
+
+        """Creates either a standard or mini ASCII banner depending on the terminal width."""
+        
+        _, max_length = self.__create_figlet()
+
+        if max_length <= terminal_width:
+            return self.create_standard(version)
+        else:
+            return self.create_mini(version)
+class TerminalWindowManager:
+
+    '''Handles terminal window size.'''
+
+    __shutil_width_function : Callable[[], Optional[int]]
+    __stty_width_function : Callable[[], Optional[int]]
+
+    cutoff_width : Final[int] = 70
+
+    @staticmethod
+    def default_shutil_width_function() -> Optional[int]:
+
+        """Get terminal width using shutil (multi-platform)."""
+
+        try:
+
+            terminal_width : int = get_terminal_size().columns
+
+            return terminal_width
+        
+        except:
+            return None
+
+    @staticmethod
+    def default_stty_width_function() -> Optional[int]:
+
+        """Get terminal width using stty command (Linux)."""
+
+        try:
+
+            process : CompletedProcess[str] = subprocess.run(
+                ["/bin/sh", "-c", "stty size | cut -d' ' -f2"],
+                capture_output = True,
+                text = True,
+                check = False,
+            )
+
+            stty_output : str = process.stdout.strip()
+            terminal_width : int = int(stty_output)
+
+            if terminal_width >= 0:
+                return terminal_width
+
+            return None
+        except:
+            return None
+
+    def __init__(
+        self,
+        shutil_width_function : Optional[Callable[[], Optional[int]]] = None,
+        stty_width_function : Optional[Callable[[], Optional[int]]] = None,
+    ) -> None:
+        
+        if shutil_width_function is None:
+            shutil_width_function = self.default_shutil_width_function
+        
+        if stty_width_function is None:
+            stty_width_function = self.default_stty_width_function
+
+        self.__shutil_width_function = shutil_width_function
+        self.__stty_width_function = stty_width_function
+
+    def get_or_cutoff(self) -> int:
+
+        terminal_width : Optional[int] = self.__shutil_width_function()
+
+        if terminal_width is None:
+            terminal_width = self.__stty_width_function()
+
+        if terminal_width is None:
+            terminal_width = self.cutoff_width
+
+        return terminal_width
 class CLIValidator:
 
     '''Handles CLI argument validation.'''
@@ -224,6 +336,7 @@ class CLIManager():
     __ascii_banner_manager : AsciiBannerManager
     __runtime_checker : RuntimeChecker
     __requirement_checker : RequirementChecker
+    __tw_manager : TerminalWindowManager
     __logging_function : Callable[[str], None]
 
     def __init__(
@@ -232,20 +345,25 @@ class CLIManager():
         ascii_banner_manager : AsciiBannerManager = AsciiBannerManager(),
         runtime_checker : RuntimeChecker = RuntimeChecker(),
         requirement_checker : RequirementChecker = RequirementChecker(),
+        tw_manager : TerminalWindowManager = TerminalWindowManager(),
         logging_function : Callable[[str], None] = LambdaCollection.logging_function()) -> None:
         
         self.__ap_factory = ap_factory
         self.__ascii_banner_manager = ascii_banner_manager
         self.__runtime_checker = runtime_checker
         self.__requirement_checker = requirement_checker
+        self.__tw_manager = tw_manager
         self.__logging_function = logging_function
 
     def __log_ascii_banner(self) -> None:
 
         '''Logs the ascii banner.'''
 
+        terminal_width : int = self.__tw_manager.get_or_cutoff()
+        ascii_banner : str = self.__ascii_banner_manager.create(PROJECT_VERSION, terminal_width)
+
         self.__logging_function("")
-        self.__logging_function(self.__ascii_banner_manager.create(PROJECT_VERSION))
+        self.__logging_function(ascii_banner)
     def __log_namespace(self, args : Namespace):
 
         '''Logs the provided args.'''
