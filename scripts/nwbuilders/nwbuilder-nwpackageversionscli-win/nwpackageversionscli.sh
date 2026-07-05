@@ -2,7 +2,7 @@
 
 # --- CONFIGURATION ---
 PROJECT_NAME="nwpackageversions"
-PROJECT_VERSION="2.0.0"
+PROJECT_VERSION="2.0.1"
 PROJECT_ALIAS="nwpver"
 CLI_NAME="nwpackageversionscli"
 
