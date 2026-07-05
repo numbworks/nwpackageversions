@@ -94,6 +94,12 @@ This project includes portions of the `asciibannermanager` project, which is doc
 
 - [docs-asciibannermanager.md](SeeAlso-asciibannermanager/docs-asciibannermanager.md)
 
+## See Also: `developerguide`
+
+To get started with this project as a developer, please give a look to the following document:
+
+- [docs-developerguide-python.md](SeeAlso-developerguide/docs-developerguide-python.md)
+
 ## See Also: `nwmakefiles`
 
 This project includes portions of the `nwmakefiles` project, which is documented here:
