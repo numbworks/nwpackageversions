@@ -48,46 +48,6 @@ The `[1]` ("take only the first span element") in the second pattern is necessar
 3. [requirements.txt](ExampleFiles/requirements.txt)
 4. [history.html](ExampleFiles/history.html)
 
-## Known Issues: "Import nwpackageversions could not be resolved Pylance (reportMissingImports)"
-
-If while trying to import `nwpackageversions` in `Visual Studio Code` the following warning appears:
-
-```
-Import nwpackageversions could not be resolved Pylance (reportMissingImports)
-```
-
-please:
-
-1. in your terminal application of choice, launch the Python interpreter:
-
-```powershell
-PS C:\> python
-```
-
-2. run the following command:
-
-```python
-import nwpackageversions
-print(nwpackageversions.__file__)
-```
-
-3. the console will output something like this:
-
-```
-C:\Users\Rubèn\src\nwpackageversions\src\nwpackageversions.py
-```
-
-4. open Visual Studio Code > <ins>File</ins> > <ins>Preferences</ins> > <ins>Settings</ins> and search for <ins>Python › Analysis: Extra Paths</ins>;
-
-5. click on <ins>Add item</ins> and add the path above without the python file name: 
-
-```
-C:\Users\Rubèn\src\nwpackageversions\src\
-```
-
-6. restart Visual Studio Code;
-7. Done!
-
 ## See Also: `asciibannermanager`
 
 This project includes portions of the `asciibannermanager` project, which is documented here:
@@ -105,6 +65,12 @@ To get started with this project as a developer, please give a look to the follo
 To learn more about the "framework freeze" strategy adopted by this project, please have a look at the following document:
 
 - [docs-frameworkfreeze-python.md](SeeAlso-frameworkfreeze/docs-frameworkfreeze-python.md)
+
+## See Also: `knownissues`
+
+To learn more about some known issues that might have required a workaround to make this project work, please have a look at the following document:
+
+- [docs-knownissues-python.md](SeeAlso-knownissues/docs-knownissues-python.md)
 
 ## See Also: `nwmakefiles`
 
