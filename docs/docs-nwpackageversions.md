@@ -84,6 +84,12 @@ This project includes portions of the `nwmakefiles` project, which is documented
 
 - [docs-nwmakefiles.md](SeeAlso-nwmakefiles/docs-nwmakefiles.md)
 
+## See Also: `userguide`
+
+To get started with this project as a user, please give a look to the following document:
+
+- [docs-userguide-python.md](SeeAlso-userguide/docs-userguide-python.md)
+
 ## Legal Information
 
 This software includes a RSS reader for PyPi.org. Due of the lack of a badge-related field in the RSS feed, which are necessary to discern stable releases from the others ("pre-release", "yanked"), a minimal web scraping functionality has been added in order to retrieve the badge from the release history page (```https://pypi.org/project/<package_name>/#history```).
