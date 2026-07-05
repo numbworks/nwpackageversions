@@ -20,3 +20,4 @@ RUN pip install pylint==3.3.3
 
 # OTHERS
 RUN pip install --upgrade pip==26.0.1
+RUN pip install setuptools==82.0.1
