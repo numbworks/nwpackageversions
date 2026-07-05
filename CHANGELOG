@@ -1,3 +1,13 @@
+v2.0.1
+- Application:
+	- Feature: added support for mini banner.
+- Maintenance:
+	- Devcontainer: moved Python cache folders (pycache, mypy_cache) to a Docker volume.
+	- SeeAlso: added docs-frameworkfreeze-python.md, docs-knownissues-python.md, docs-userguide-python.md.
+	- SeeAlso: updated docs-asciibannermanager.md, docs-developerguide-python.md.
+- Documentation:
+	- Feature: updated to v2.0.1.
+
 v2.0.0 - BREAKING CHANGES
 - Application:
 	- Feature: added support for AsciiBanner, streamlined command-line interface.
